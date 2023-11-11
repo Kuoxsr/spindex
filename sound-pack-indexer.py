@@ -15,7 +15,7 @@ Command-line arguments:
     --version   (-v)    Show version number
 """
 
-__version__ = '0.1'
+__version__ = '0.2'
 __maintainer__ = "kuoxsr@gmail.com"
 __status__ = "Prototype"
 
@@ -82,58 +82,36 @@ def main():
     target = args.path
     namespace = args.path.name
 
-    # print(f"target: {target}")
-    # print(f"namespace: {namespace}")
-
     sound_files = sorted([f for f in target.rglob("*.ogg")])
     # print(*sound_files, sep='\n')
 
     # Show me the maximum number of folders between "sounds" and the ogg file
+    # This is an attempt to auto-detect the starting position of the sound event name
     max_folders = 0
     for x in sound_files:
         test = x.relative_to(target).parent.parts
         if len(test) > max_folders:
             max_folders = len(test)
 
-    # Build outer dictionary first
-    events: dict[str, dict[bool, list[str]]] = {}
+    # Build dictionary
+    events: dict[str, dict[str, bool | list[dict[str, str | float]]]] = {}
     current_event = ""
     for f in sound_files:
-        # The files we're considering must be under the "sounds" folder
+        # Only consider files under the "sounds" folder
         if "sounds" not in f.parts:
             continue
 
-        if max_folders >= 5:
-            # if there is a team member folder between "sounds" and the start of the event name
-            parts = f.relative_to(target).parent.parts[2:]
-        elif max_folders < 5:
-            # If the event name happens immediately after "sounds"
-            parts = f.relative_to(target).parent.parts[1:]
-
-        event = ".".join(parts)
-        if event == current_event:
-            continue
-
-        # Initialize the event dictionary
-        current_event = event
-        events[event] = dict({"replace": True, "sounds": []})
-
-    # print(f"\nevents: {events}")
-
-    for f in sound_files:
-        if "sounds" not in f.parts:
-            continue
-
-        if max_folders >= 5:
-            # if there is a team member folder between "sounds" and the start of the event name
-            parts = f.relative_to(target).parent.parts[2:]
-        elif max_folders < 5:
-            # If the event name happens immediately after "sounds"
-            parts = f.relative_to(target).parent.parts[1:]
-
+        start_index: int = (max_folders >= 5) + 1
+        parts = f.relative_to(target).parent.parts[start_index:]
         event = ".".join(parts)
 
-        # build the sound dictionary
+        if event != current_event:
+            # We're dealing with a "new" event
+            current_event = event
+            events[event] = dict({"replace": True, "sounds": []})
+            # print(f"event: {event}")
+
+        # build the sound dictionary, and add it to the sounds list
         name = f"{namespace}:{'/'.join(f.relative_to(target).parts[1:-1])}/{f.stem}"
         sound = dict({"name": name, "volume": 0.5})
         events[event]["sounds"].append(sound)

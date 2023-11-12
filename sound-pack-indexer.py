@@ -15,7 +15,7 @@ Command-line arguments:
     --version   (-v)    Show version number
 """
 
-__version__ = '0.3'
+__version__ = '0.4'
 __maintainer__ = "kuoxsr@gmail.com"
 __status__ = "Prototype"
 
@@ -79,15 +79,15 @@ def main():
 
     args = handle_command_line()
 
-    target = args.path
-    namespace = args.path.name
+    target: Path = args.path
+    namespace: str = args.path.name
 
-    sound_files = sorted([f for f in target.rglob("*.ogg")])
+    sound_files: list[Path] = sorted([f for f in target.rglob("*.ogg")])
     # print(*sound_files, sep='\n')
 
     # Show me the maximum number of folders between "sounds" and the ogg file
     # This is an attempt to auto-detect the starting position of the sound event name
-    max_folders = 0
+    max_folders: int = 0
     for x in sound_files:
         test = x.relative_to(target).parent.parts
         if len(test) > max_folders:
@@ -96,24 +96,26 @@ def main():
     # Build dictionary
     events: dict[str, dict[str, bool | list[dict[str, str | float]]]] = {}
     known_events: list[str] = []
-    for f in sound_files:
+    for file in sound_files:
+
         # Only consider files under the "sounds" folder
-        if "sounds" not in f.parts:
+        if "sounds" not in file.parts:
             continue
 
+        # Build the event name
         start_index: int = (max_folders >= 5) + 1
-        parts = f.relative_to(target).parent.parts[start_index:]
+        parts = file.relative_to(target).parent.parts[start_index:]
         event = ".".join(parts)
 
+        # Initialize the event if we haven't seen it before
         if event not in known_events:
-            # We're dealing with a "new" event
             known_events.append(event)
             events[event] = dict({"replace": True, "sounds": []})
             # print(f"event: {event}")
 
         # build the sound dictionary, and add it to the sounds list
-        name = f"{namespace}:{'/'.join(f.relative_to(target).parts[1:-1])}/{f.stem}"
-        sound = dict({"name": name, "volume": 0.5})
+        name: str = f"{namespace}:{'/'.join(file.relative_to(target).parts[1:-1])}/{file.stem}"
+        sound: dict[str, str | float] = dict({"name": name, "volume": 0.5})
         events[event]["sounds"].append(sound)
         # print(f"    {sound}")
 

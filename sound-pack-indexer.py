@@ -15,7 +15,7 @@ Command-line arguments:
     --version   (-v)    Show version number
 """
 
-__version__ = '0.2'
+__version__ = '0.3'
 __maintainer__ = "kuoxsr@gmail.com"
 __status__ = "Prototype"
 
@@ -95,7 +95,7 @@ def main():
 
     # Build dictionary
     events: dict[str, dict[str, bool | list[dict[str, str | float]]]] = {}
-    current_event = ""
+    known_events: list[str] = []
     for f in sound_files:
         # Only consider files under the "sounds" folder
         if "sounds" not in f.parts:
@@ -105,9 +105,9 @@ def main():
         parts = f.relative_to(target).parent.parts[start_index:]
         event = ".".join(parts)
 
-        if event != current_event:
+        if event not in known_events:
             # We're dealing with a "new" event
-            current_event = event
+            known_events.append(event)
             events[event] = dict({"replace": True, "sounds": []})
             # print(f"event: {event}")
 
@@ -117,6 +117,10 @@ def main():
         events[event]["sounds"].append(sound)
         # print(f"    {sound}")
 
+    with open("generated-sounds.json", "w") as fp:
+        json.dump(events, fp, indent=4, cls=CompactJSONEncoder)
+
+    print(f"\nfile created in {target} with the following contents:\n")
     print(json.dumps(events, indent=4, cls=CompactJSONEncoder))
 
 

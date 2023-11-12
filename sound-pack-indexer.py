@@ -15,7 +15,7 @@ Command-line arguments:
     --version   (-v)    Show version number
 """
 
-__version__ = '0.4'
+__version__ = '0.5'
 __maintainer__ = "kuoxsr@gmail.com"
 __status__ = "Prototype"
 
@@ -51,9 +51,9 @@ def handle_command_line():
     else:
         args.path = ""
 
-    # If the user doesn't specify a path, use pwd
+    # If the user doesn't specify a path, use current working directory
     if not args.path:
-        args.path = Path().absolute()
+        args.path = Path.cwd()
 
     # If the user specifies a string, make sure it's a path object
     path = Path(args.path)
@@ -82,7 +82,8 @@ def main():
     target: Path = args.path
     namespace: str = args.path.name
 
-    sound_files: list[Path] = sorted([f for f in target.rglob("*.ogg")])
+    extensions: list[str] = [".ogg", ".subtitles"]
+    sound_files: list[Path] = sorted([f for f in target.rglob('*') if f.suffix in extensions])
     # print(*sound_files, sep='\n')
 
     # Show me the maximum number of folders between "sounds" and the ogg file
@@ -94,7 +95,7 @@ def main():
             max_folders = len(test)
 
     # Build dictionary
-    events: dict[str, dict[str, bool | list[dict[str, str | float]]]] = {}
+    events: dict[str, dict[str, bool | list[dict[str, str | float]]], str] = {}
     known_events: list[str] = []
     for file in sound_files:
 
@@ -109,21 +110,34 @@ def main():
 
         # Initialize the event if we haven't seen it before
         if event not in known_events:
+
+            # Build the event subtitle
+            subtitle: str = "subtitles."
+            if file.suffix == ".subtitles":
+                subtitle += file.stem[1:]
+            else:
+                subtitle += event
+
+            # Initialize the event
             known_events.append(event)
-            events[event] = dict({"replace": True, "sounds": []})
+            events[event] = dict({"replace": True, "sounds": [], "subtitle": subtitle})
             # print(f"event: {event}")
 
         # build the sound dictionary, and add it to the sounds list
-        name: str = f"{namespace}:{'/'.join(file.relative_to(target).parts[1:-1])}/{file.stem}"
-        sound: dict[str, str | float] = dict({"name": name, "volume": 0.5})
-        events[event]["sounds"].append(sound)
-        # print(f"    {sound}")
+        if file.suffix == ".ogg":
+            name: str = f"{namespace}:{'/'.join(file.relative_to(target).parts[1:-1])}/{file.stem}"
+            sound: dict[str, str | float] = dict({"name": name, "volume": 0.5})
+            events[event]["sounds"].append(sound)
+            # print(f"    {sound}")
+
+    # Sort the dictionary by key?
+    sorted_events = {key: val for key, val in sorted(events.items(), key=lambda ele: ele[0])}
 
     with open("generated-sounds.json", "w") as fp:
-        json.dump(events, fp, indent=4, cls=CompactJSONEncoder)
+        json.dump(sorted_events, fp, indent=4, cls=CompactJSONEncoder)
 
     print(f"\nfile created in {target} with the following contents:\n")
-    print(json.dumps(events, indent=4, cls=CompactJSONEncoder))
+    print(json.dumps(sorted_events, indent=4, cls=CompactJSONEncoder))
 
 
 # ------------------------------------------------------

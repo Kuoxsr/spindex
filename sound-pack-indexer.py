@@ -15,7 +15,7 @@ Command-line arguments:
     --version   (-v)    Show version number
 """
 
-__version__ = '0.5'
+__version__ = '0.6'
 __maintainer__ = "kuoxsr@gmail.com"
 __status__ = "Prototype"
 
@@ -88,35 +88,32 @@ def main():
 
     # Show me the maximum number of folders between "sounds" and the ogg file
     # This is an attempt to auto-detect the starting position of the sound event name
-    max_folders: int = 0
-    for x in sound_files:
-        test = x.relative_to(target).parent.parts
-        if len(test) > max_folders:
-            max_folders = len(test)
+    max_list: tuple = max([x.parent.parts for x in sound_files], key=len)
+    max_folders: int = len(max_list[max_list.index("sounds")+1:])
 
     # Build dictionary
     events: dict[str, dict[str, bool | list[dict[str, str | float]]], str] = {}
     known_events: list[str] = []
-    for file in sound_files:
+    for f in sound_files:
 
         # Only consider files under the "sounds" folder
-        if "sounds" not in file.parts:
+        if "sounds" not in f.parts:
             continue
 
+        # Strip off irrelevant bits from the path
+        file: Path = f.relative_to(target / "sounds")
+
         # Build the event name
-        start_index: int = (max_folders >= 5) + 1
-        parts = file.relative_to(target).parent.parts[start_index:]
-        event = ".".join(parts)
+        typical_event_length = 3
+        adj_index: int = max_folders - typical_event_length
+        start_index: int = 0 if adj_index < 0 else adj_index
+        event = ".".join(file.parent.parts[start_index:])
 
         # Initialize the event if we haven't seen it before
         if event not in known_events:
 
             # Build the event subtitle
-            subtitle: str = "subtitles."
-            if file.suffix == ".subtitles":
-                subtitle += file.stem[1:]
-            else:
-                subtitle += event
+            subtitle: str = f"subtitles.{file.stem[1:] if (file.suffix == '.subtitles') else event}"
 
             # Initialize the event
             known_events.append(event)
@@ -125,7 +122,7 @@ def main():
 
         # build the sound dictionary, and add it to the sounds list
         if file.suffix == ".ogg":
-            name: str = f"{namespace}:{'/'.join(file.relative_to(target).parts[1:-1])}/{file.stem}"
+            name: str = f"{namespace}:{file.parent}/{file.stem}"
             sound: dict[str, str | float] = dict({"name": name, "volume": 0.5})
             events[event]["sounds"].append(sound)
             # print(f"    {sound}")

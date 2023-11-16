@@ -15,7 +15,7 @@ Command-line arguments:
     --version   (-v)    Show version number
 """
 
-__version__ = '0.6'
+__version__ = '0.7'
 __maintainer__ = "kuoxsr@gmail.com"
 __status__ = "Prototype"
 
@@ -24,6 +24,7 @@ from json_encoder import CompactJSONEncoder
 from pathlib import Path
 import argparse
 import json
+from tinytag import TinyTag
 
 
 def handle_command_line():
@@ -123,7 +124,12 @@ def main():
         # build the sound dictionary, and add it to the sounds list
         if file.suffix == ".ogg":
             name: str = f"{namespace}:{file.parent}/{file.stem}"
-            sound: dict[str, str | float] = dict({"name": name, "volume": 0.5})
+            sound: dict[str, str | float | bool] = dict({"name": name, "volume": 1.0})
+
+            # Build the custom volume, pitch, weight or stream from sound file metadata
+            metadata = TinyTag.get(f).album
+            tags: dict[str, str | float | bool] = {} if not metadata else json.loads(metadata)
+            sound.update(tags)
             events[event]["sounds"].append(sound)
             # print(f"    {sound}")
 

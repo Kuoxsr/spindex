@@ -15,7 +15,7 @@ Command-line arguments:
     --version   (-v)    Show version number
 """
 
-__version__ = '0.7'
+__version__ = '0.8'
 __maintainer__ = "kuoxsr@gmail.com"
 __status__ = "Prototype"
 
@@ -136,7 +136,7 @@ def main():
     # Sort the dictionary by key?
     sorted_events = {key: val for key, val in sorted(events.items(), key=lambda ele: ele[0])}
 
-    with open("generated-sounds.json", "w") as fp:
+    with open(target / "generated-sounds.json", "w") as fp:
         json.dump(sorted_events, fp, indent=4, cls=CompactJSONEncoder)
 
     print(f"\nfile created in {target} with the following contents:\n")

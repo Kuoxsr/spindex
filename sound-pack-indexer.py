@@ -9,13 +9,17 @@ Interface: Command-line
 Functional Requirements: Take a series of .ogg files and create the JSON to describe it
 Notes:
 
+In order to get this script to work as a command from any directory, I had to add the following
+into my fish.config:
+export PYTHONPATH="$PYTHONPATH:{full path to tinytag sub-folder inside venv folder}
+
 Command-line arguments:
 
     --help      (-h)    Show usage
     --version   (-v)    Show version number
 """
 
-__version__ = '0.8'
+__version__ = '0.9'
 __maintainer__ = "kuoxsr@gmail.com"
 __status__ = "Prototype"
 

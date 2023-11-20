@@ -16,22 +16,22 @@ A properly formatted staging area will consist of a namespace folder, which is a
 
 ```
 mynamespace (can be "minecraft" if you don't want to use a custom namespace)
-	sounds
-		entity
-			villager
-				ambient
-					test-sound.ogg
+    sounds
+        entity
+            villager
+                ambient
+                    test-sound.ogg
 ```
 
 In the above example, the script would generate a record for the entity.villager.ambient sound event, with `test-sound.ogg` as its only sound.  The JSON might look like this:
 
 ```
 {
-	"entity.villager.ambient": {
-		"sounds": [
-			{"name": "mynamespace:entity/villager/ambient/test-sound"}
-		]
-	}
+    "entity.villager.ambient": {
+        "sounds": [
+            {"name": "mynamespace:entity/villager/ambient/test-sound"}
+        ]
+    }
 }
 ```
 
@@ -43,12 +43,12 @@ The script is smart enough to use the following folder structure as well:
 
 ```
 some-namespace (can be "minecraft" if you don't want to use a custom namespace)
-	sounds
-		extra-folder(s)
-			entity
-				villager
-					ambient
-						test-sound.ogg
+    sounds
+        extra-folder(s)
+            entity
+                villager
+                    ambient
+                        test-sound.ogg
 ```
 
 I needed this because I wanted to keep sounds from different team members separate:

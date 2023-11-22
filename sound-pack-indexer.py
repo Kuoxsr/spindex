@@ -19,7 +19,7 @@ Command-line arguments:
     --version   (-v)    Show version number
 """
 
-__version__ = '0.9'
+__version__ = '0.10'
 __maintainer__ = "kuoxsr@gmail.com"
 __status__ = "Prototype"
 
@@ -28,6 +28,7 @@ from json_encoder import CompactJSONEncoder
 from pathlib import Path
 import argparse
 import json
+import re
 from tinytag import TinyTag
 
 
@@ -75,6 +76,23 @@ def handle_command_line():
     return args
 
 
+def get_mc_json() -> str:
+    volume: str = r'(?:"volume":[0-1][.]\d)|'
+    pitch: str = r'(?:"pitch":\d[.]\d)|'
+    weight: str = r'(?:"weight":\d+)|'
+    stream: str = r'(?:"stream":(?:true|false)+)|'
+    dist: str = r'(?:"attenuation_distance":\d+)|'
+    preload: str = r'(?:"preload":(?:true|false)+)|'
+    sound_type: str = r'(?:"type":(?:"sound"|"event")+)'
+
+    stage1 = r'(?:' + volume + pitch + weight + stream + dist + preload + sound_type + ')+'
+    stage2 = r'(?:,' + stage1 + ')*'
+
+    result = r'^{' + stage1 + stage2 + '}$'
+
+    return result
+
+
 # Main -------------------------------------------------
 def main():
     """
@@ -83,6 +101,14 @@ def main():
     """
 
     args = handle_command_line()
+
+    # Minecraft's regular expression for valid ogg file names/paths
+    good_name = re.compile("^[a-z0-9/._-]+$")
+
+    # Regular expression to validate sounds.json key-value pairs
+    mc_json = re.compile(get_mc_json())
+
+    warnings: list[str] = []
 
     target: Path = args.path
     namespace: str = args.path.name
@@ -103,6 +129,13 @@ def main():
 
         # Only consider files under the "sounds" folder
         if "sounds" not in f.parts:
+            warnings.append(f"\n{f}File is not under the 'sounds' folder")
+            continue
+
+        # Only consider files that match naming rules
+        file_from_target: Path = f.relative_to(target.parent)
+        if not good_name.match(str(file_from_target)):
+            warnings.append(f"\n{file_from_target}\nPath does not match valid naming rules")
             continue
 
         # Strip off irrelevant bits from the path
@@ -131,8 +164,20 @@ def main():
             sound: dict[str, str | float | bool] = dict({"name": name, "volume": 1.0})
 
             # Build the custom volume, pitch, weight or stream from sound file metadata
-            metadata = TinyTag.get(f).album
-            tags: dict[str, str | float | bool] = {} if not metadata else json.loads(metadata)
+            metadata = re.sub(r'\s+', '', TinyTag.get(f).album)
+
+            # Only consider the metadata valid if it follows Minecraft's format
+            if not mc_json.match(metadata):
+                warnings.append(f"\n{f}\nFile metadata does not match Minecraft's format: {metadata}")
+                continue
+
+            # Only consider the metadata valid if it is valid JSON format
+            try:
+                tags: dict[str, str | float | bool] = {} if not metadata else json.loads(metadata)
+            except ValueError:
+                warnings.append(f"\n{f}\nFile metadata is not valid JSON: ({metadata})")
+                continue
+
             sound.update(tags)
             events[event]["sounds"].append(sound)
             # print(f"    {sound}")
@@ -140,9 +185,22 @@ def main():
     # Sort the dictionary by key?
     sorted_events = {key: val for key, val in sorted(events.items(), key=lambda ele: ele[0])}
 
+    # If there are errors, display them and ask the user whether they'd like to proceed
+    if len(warnings) > 0:
+        print(f"\nThere were {len(warnings)} warnings during the process:")
+
+        for w in warnings:
+            print(w)
+
+        response = input("\nWould you like to continue? (y/N) ")
+        if response.lower() != "y":
+            exit()
+
+    # Write the finished file to the target folder
     with open(target / "generated-sounds.json", "w") as fp:
         json.dump(sorted_events, fp, indent=4, cls=CompactJSONEncoder)
 
+    # Show the user what was written to the target folder
     print(f"\nfile created in {target} with the following contents:\n")
     print(json.dumps(sorted_events, indent=4, cls=CompactJSONEncoder))
 

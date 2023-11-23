@@ -67,13 +67,11 @@ I suppose I should mention that sound files themselves can be named anything you
 5. underscore
 6. dash
 
-Here is a regular expression to check file names:
+Here is a regular expression to check file names, which this script uses:
 
 ```
 ^[a-z0-9/._-]+$
 ```
-
-Ironically, I did not include any file name compliance checking in this script as of this writing.  The pack checker script has it, but this one does not... yet.
 
 ### Subtitles files
 If your JSON doesn't include a "subtitle" specification for a sound event you will not see text like "villager mumbles" on the right-hand side of the screen when the noise occurs (provided you have "show subtitles" on.)  To cover that, the script auto-generates this for you with exactly the same name as the sound event by default.  I say "by default," because in several places throughout the vanilla `sounds.json` file, the subtitle _does not match_ the sound event name (Thanks, Mojang!)
@@ -130,7 +128,7 @@ If you want to include other properties, it would look something like this:
 
 There's a good document explaining what all these directives do [here](https://minecraft.fandom.com/wiki/Sounds.json).
 
-When the script encounters a sound clip with an album title, it assumes that this string will be in the above format, which means here is where I admit that I haven't written any error handling for what happens when you use a clip that has a string like "Fear of a Blank Planet" instead of JSON.  "Work in progress," remember?
+The script will now warn you when you spell something wrong or create malformed JSON in some way.  Curly braces are required.  Finding a regular expression to validate all of that was a nightmare hellscape of epic proportions, but having it working makes me feel a bit like a [superhero](https://xkcd.com/208/). :superhero:
 
 ### "replace": true
 Much of the time, you will want to have `"replace": true` set for a particular sound event, like so:

@@ -1,12 +1,12 @@
 #!/usr/bin/env python3
 
-# noinspection GrazieInspection
 """
 Problem: Automatically generate a Minecraft sounds.json file from a folder structure
 Target Users: Me
 Target System: GNU/Linux
 Interface: Command-line
-Functional Requirements: Take a series of .ogg files and create the JSON to describe it
+Functional Requirements: Take a series of .ogg files and create the JSON manifest.
+Allow the user to copy .ogg files to an existing pack and merge JSON files together.
 Notes:
 
 In order to get this script to work as a command from any directory, I had to add the following
@@ -19,17 +19,19 @@ Command-line arguments:
     --version   (-v)    Show version number
 """
 
-__version__ = '0.11'
+__version__ = '0.12'
 __maintainer__ = "kuoxsr@gmail.com"
 __status__ = "Prototype"
 
 # Import modules
 from json_encoder import CompactJSONEncoder
 from pathlib import Path
+from tinytag import TinyTag
+
 import argparse
 import json
 import re
-from tinytag import TinyTag
+import sys
 
 
 def handle_command_line():
@@ -44,36 +46,81 @@ def handle_command_line():
     parser.add_argument("-v", "--version", action="version", version="%(prog)s version " + __version__)
 
     parser.add_argument(
-        "path",
-        action="store",
-        nargs=argparse.REMAINDER,
-        help="Path to the sounds.json file you want to check.  The file name itself is not required.")
+        "-s",
+        "--source",
+        type=Path,
+        default=Path.cwd(),
+        help="Path to the source folder. Ogg files to be indexed are found here.")
+
+    parser.add_argument(
+        "-t",
+        "--target",
+        type=Path,
+        default=type('NonePath', (), {'resolve': lambda: None}),
+        help="Path to the target folder. Ogg files will be copied here, if allowed.")
 
     args = parser.parse_args()
 
-    # path is a LIST at this point, and we want just a string
-    if len(args.path) > 0:
-        args.path = args.path[0]
-    else:
-        args.path = ""
+    print("evaluating source")
+    if src := validate_source(args.source):
+        sys.exit(src.format("source"))
 
-    # If the user doesn't specify a path, use current working directory
-    if not args.path:
-        args.path = Path.cwd()
+    print("evaluating target")
+    if tgt := validate_target(args.target):
+        sys.exit(tgt.format("target"))
 
-    # If the user specifies a string, make sure it's a path object
-    path = Path(args.path)
+    # print(f"args: {args}"); sys.exit()
+    return args
+
+
+def validate_source(path: Path) -> str | None:
 
     # Does path folder exist on the file system?
     if not path.exists():
-        print(f"Specified path not found. {path} is not a valid filesystem path.")
-        exit()
+        return f"Specified {{}} path not found. {path} is not a valid filesystem path."
 
-    # Finally, make the argument a Path  (does this work?)
-    args.path = Path(args.path).resolve()
+    return validate_path_architecture(path)
 
-#    print("args:",args); exit()
-    return args
+
+def validate_target(path: Path) -> str | None:
+
+    # Empty path should just be ignored
+    if path.resolve() is None:
+        return None
+
+    # build a few of the files/folders we need for later
+    namespace = path
+    namespace_sounds = path / "sounds"
+    minecraft = path.parent / "minecraft"
+    sounds_json = minecraft / "sounds.json"
+
+    # If path has an incomplete structure, create all necessary objects, if the user agrees
+    if not namespace.exists() or \
+       not namespace_sounds.exists() or \
+       not minecraft.exists() or \
+       not sounds_json.exists():
+
+        response = input(f"\nPath {namespace} has an incomplete structure. Create folder structure? (y/N) ")
+        if response.lower() != "y":
+            return None
+
+        # Create the proper folder structure in the target location
+        namespace_sounds.mkdir(parents=True)
+        minecraft.mkdir(parents=True)
+        sounds_json.touch()
+
+    # Validate existing structure
+    return validate_path_architecture(path)
+
+
+def validate_path_architecture(path: Path) -> str | None:
+
+    # Source folder must have only one child, and that child must be "sounds"
+    path_check = [i for i in path.iterdir() if i.is_dir()]
+    if len(path_check) != 1 and path_check[1] != "sounds":
+        return f"The {{}} path {path} does not appear to be a namespace folder.  Should have a 'sounds' sub-folder."
+
+    return None
 
 
 def get_json_regex() -> str:
@@ -110,11 +157,11 @@ def main():
 
     warnings: list[str] = []
 
-    target: Path = args.path
-    namespace: str = args.path.name
+    source: Path = args.source
+    namespace: str = args.source.name
 
     extensions: list[str] = [".ogg", ".subtitles"]
-    sound_files: list[Path] = sorted([f for f in target.rglob('*') if f.suffix in extensions])
+    sound_files: list[Path] = sorted([f for f in source.rglob('*') if f.suffix in extensions])
     # print(*sound_files, sep='\n')
 
     # Show me the maximum number of folders between "sounds" and the ogg file
@@ -133,13 +180,13 @@ def main():
             continue
 
         # Only consider files that match naming rules
-        file_from_target: Path = f.relative_to(target.parent)
-        if not good_name.match(str(file_from_target)):
-            warnings.append(f"{file_from_target}\nPath does not match valid naming rules")
+        file_from_source: Path = f.relative_to(source.parent)
+        if not good_name.match(str(file_from_source)):
+            warnings.append(f"{file_from_source}\nPath does not match valid naming rules")
             continue
 
         # Strip off irrelevant bits from the path
-        file: Path = f.relative_to(target / "sounds")
+        file: Path = f.relative_to(source / "sounds")
 
         # Build the event name
         typical_event_length = 3
@@ -195,15 +242,29 @@ def main():
 
         response = input("\nWould you like to continue? (y/N) ")
         if response.lower() != "y":
-            exit()
+            sys.exit()
 
-    # Write the finished file to the target folder
-    with open(target / "generated-sounds.json", "w") as fp:
+    # Write the finished file to the source folder
+    with open(source / "generated-sounds.json", "w") as fp:
         json.dump(sorted_events, fp, indent=4, cls=CompactJSONEncoder)
 
-    # Show the user what was written to the target folder
-    print(f"\nfile created in {target} with the following contents:\n")
+    # Show the user what was written to the source folder
+    print(f"\nfile created in {source} with the following contents:\n")
     print(json.dumps(sorted_events, indent=4, cls=CompactJSONEncoder))
+
+    # If the user hasn't specified a target folder, just get out
+    if args.target.resolve() is None:
+        sys.exit()
+
+    # Ask the user whether we should copy files to the target folder
+    print(f"Target folder set to existing pack at:\n{args.target}")
+    response = input("\nIncorporate these files into existing pack? (y/N) ")
+    if response.lower() != "y":
+        sys.exit()
+
+    # Copy OGG files to the target folder, creating folder structure if it doesn't exist
+
+    # Combine JSON files
 
 
 # ------------------------------------------------------

@@ -19,9 +19,12 @@ Command-line arguments:
     --version   (-v)    Show version number
 """
 
-__version__ = '0.12'
+__version__ = '0.13'
 __maintainer__ = "kuoxsr@gmail.com"
 __status__ = "Prototype"
+
+import fnmatch
+from os.path import isdir, join
 
 # Import modules
 from json_encoder import CompactJSONEncoder
@@ -30,7 +33,9 @@ from tinytag import TinyTag
 
 import argparse
 import json
+import pathlib
 import re
+import shutil
 import sys
 
 
@@ -61,11 +66,9 @@ def handle_command_line():
 
     args = parser.parse_args()
 
-    print("evaluating source")
     if src := validate_source(args.source):
         sys.exit(src.format("source"))
 
-    print("evaluating target")
     if tgt := validate_target(args.target):
         sys.exit(tgt.format("target"))
 
@@ -140,6 +143,48 @@ def get_json_regex() -> str:
     return result
 
 
+def include_patterns(*patterns):
+    """ Function that can be used as shutil.copytree() ignore parameter that
+    determines which files *not* to ignore, the inverse of "normal" usage.
+
+    This is a factory function that creates a function which can be used as a
+    callable for copytree()'s ignore argument, *not* ignoring files that match
+    any of the glob-style patterns provided.
+
+    ‛patterns’ are a sequence of pattern strings used to identify the files to
+    include when copying the directory tree.
+
+    Example usage:
+
+        copytree(src_directory, dst_directory, ignore=include_patterns('*.ogg', '*.json'))
+
+    Stolen from user martineau on Stack Overflow
+    https://stackoverflow.com/questions/35155382/copying-specific-files-to-a-new-folder-while-maintaining-the-original-subdirect/35161407#35161407
+    """
+    def _ignore_patterns(path, all_names):
+
+        temp = all_names
+
+        # for p in patterns:
+        #     filter_match = fnmatch.filter(all_names, p)
+        #     print(f"filter_match: {filter_match}")
+
+        test = pathlib.Path(path).glob("*.[ogg][json]")
+        test_list = list(test)
+        print("\ntest generator")
+        print(f"path: {path}")
+        print(test_list, sep="\n")
+
+        # Determine names which match one or more patterns (that shouldn't be ignored)
+        keep = (name for pattern in patterns for name in fnmatch.filter(all_names, pattern))
+
+        # Ignore file names which *didn't* match any of the patterns given that aren't directory names.
+        dir_names = (name for name in all_names if isdir(join(path, name)))
+        return set(all_names) - set(keep) - set(dir_names)
+
+    return _ignore_patterns
+
+
 # Main -------------------------------------------------
 def main():
     """
@@ -148,6 +193,9 @@ def main():
     """
 
     args = handle_command_line()
+
+    # shutil.copytree(args.source, args.target, ignore=include_patterns("*.ogg", "*.json"), dirs_exist_ok=True)
+    # exit()
 
     # Minecraft's regular expression for valid ogg file names/paths
     good_name = re.compile("^[a-z0-9/._-]+$")
@@ -262,7 +310,11 @@ def main():
     if response.lower() != "y":
         sys.exit()
 
+    sys.exit("I haven't coded that yet.")
+
     # Copy OGG files to the target folder, creating folder structure if it doesn't exist
+    # TODO: skip "generated_sounds.json" and all ".subtitles" files
+    # shutil.copytree(source, args.target, dirs_exist_ok=True)
 
     # Combine JSON files
 

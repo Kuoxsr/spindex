@@ -19,12 +19,10 @@ Command-line arguments:
     --version   (-v)    Show version number
 """
 
-__version__ = '0.13'
+__version__ = '0.14'
 __maintainer__ = "kuoxsr@gmail.com"
 __status__ = "Prototype"
 
-import fnmatch
-from os.path import isdir, join
 
 # Import modules
 from json_encoder import CompactJSONEncoder
@@ -108,8 +106,8 @@ def validate_target(path: Path) -> str | None:
             return None
 
         # Create the proper folder structure in the target location
-        namespace_sounds.mkdir(parents=True)
-        minecraft.mkdir(parents=True)
+        namespace_sounds.mkdir(parents=True, exist_ok=True)
+        minecraft.mkdir(parents=True, exist_ok=True)
         sounds_json.touch()
 
     # Validate existing structure
@@ -118,7 +116,7 @@ def validate_target(path: Path) -> str | None:
 
 def validate_path_architecture(path: Path) -> str | None:
 
-    # Source folder must have only one child, and that child must be "sounds"
+    # Folder in question must have only one child, and that child must be "sounds"
     path_check = [i for i in path.iterdir() if i.is_dir()]
     if len(path_check) != 1 and path_check[1] != "sounds":
         return f"The {{}} path {path} does not appear to be a namespace folder.  Should have a 'sounds' sub-folder."
@@ -163,24 +161,19 @@ def include_patterns(*patterns):
     """
     def _ignore_patterns(path, all_names):
 
-        temp = all_names
-
-        # for p in patterns:
-        #     filter_match = fnmatch.filter(all_names, p)
-        #     print(f"filter_match: {filter_match}")
-
-        test = pathlib.Path(path).glob("*.[ogg][json]")
-        test_list = list(test)
-        print("\ntest generator")
-        print(f"path: {path}")
-        print(test_list, sep="\n")
+        # Set up files to keep based on incoming pattern(s)
+        keep_files: set(str) = set()
+        for p in patterns:
+            g = (x.name for x in pathlib.Path(path).glob(p))
+            keep_files.update(g)
 
         # Determine names which match one or more patterns (that shouldn't be ignored)
-        keep = (name for pattern in patterns for name in fnmatch.filter(all_names, pattern))
+        keep = (name for pattern in patterns for name in keep_files)
 
         # Ignore file names which *didn't* match any of the patterns given that aren't directory names.
-        dir_names = (name for name in all_names if isdir(join(path, name)))
-        return set(all_names) - set(keep) - set(dir_names)
+        dir_names = (name for name in all_names if (Path(path) / name).is_dir())
+
+        return set(all_names) - set(keep) - set(dir_names)  # - set("generated-sounds.json")
 
     return _ignore_patterns
 
@@ -193,9 +186,6 @@ def main():
     """
 
     args = handle_command_line()
-
-    # shutil.copytree(args.source, args.target, ignore=include_patterns("*.ogg", "*.json"), dirs_exist_ok=True)
-    # exit()
 
     # Minecraft's regular expression for valid ogg file names/paths
     good_name = re.compile("^[a-z0-9/._-]+$")
@@ -310,13 +300,11 @@ def main():
     if response.lower() != "y":
         sys.exit()
 
-    sys.exit("I haven't coded that yet.")
-
     # Copy OGG files to the target folder, creating folder structure if it doesn't exist
-    # TODO: skip "generated_sounds.json" and all ".subtitles" files
-    # shutil.copytree(source, args.target, dirs_exist_ok=True)
+    shutil.copytree(args.source, args.target, ignore=include_patterns("*.ogg"), dirs_exist_ok=True)
 
     # Combine JSON files
+    print("JSON combining code has yet to be written")
 
 
 # ------------------------------------------------------

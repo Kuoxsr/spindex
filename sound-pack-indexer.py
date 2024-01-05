@@ -25,6 +25,7 @@ __status__ = "Prototype"
 
 
 # Import modules
+from collections import OrderedDict
 from json_encoder import CompactJSONEncoder
 from pathlib import Path
 from tinytag import TinyTag
@@ -178,6 +179,45 @@ def include_patterns(*patterns):
     return _ignore_patterns
 
 
+def get_event_dictionary(path: Path) -> dict[str, dict[str, str | bool | list[dict[str, str | float]]]]:  # dict[str, dict[str, str | bool | list[dict[str, str | float]]]]:
+    """Loads a json file from disk"""
+
+    # If the file is empty, return an empty object
+    if path.stat().st_size == 0:
+        return {}
+
+    with open(path, "r") as read_file:
+        return dict(json.load(read_file))
+
+
+def get_combined_json(source_events, target_path) -> dict[str, dict[str, str | bool | list[dict[str, str | float]]]]:
+
+    # If target is empty, just return source
+    result = get_event_dictionary(target_path)
+    if not result:
+        return source_events
+
+    # If target has something in it, loop through source
+    for event_name, event_details in source_events.items():
+
+        # if result doesn't contain that event yet, we just add all event details and move on
+        if event_name not in result.keys():
+            result[event_name] = event_details
+            continue
+
+        result[event_name]["replace"] = event_details["replace"]
+
+        # Process sound files
+        sounds: list = event_details["sounds"]
+        test_list = [s for s in sounds if s not in result[event_name]["sounds"]]
+        result[event_name]["sounds"].extend(test_list)
+
+        result[event_name]["subtitle"] = event_details["subtitle"]
+
+    # return empty structure, for now
+    return result
+
+
 # Main -------------------------------------------------
 def main():
     """
@@ -246,7 +286,7 @@ def main():
         # build the sound dictionary, and add it to the sounds list
         if file.suffix == ".ogg":
             name: str = f"{namespace}:{file.parent}/{file.stem}"
-            sound: dict[str, str | float | bool] = dict({"name": name, "volume": 1.0})
+            sound = OrderedDict({"name": name, "volume": 1.0})
 
             # Build the custom volume, pitch, weight or stream from sound file metadata
             album_title = TinyTag.get(f).album
@@ -295,16 +335,35 @@ def main():
         sys.exit()
 
     # Ask the user whether we should copy files to the target folder
-    print(f"Target folder set to existing pack at:\n{args.target}")
+    print(f"\nTarget folder set to existing pack at:\n{args.target}")
     response = input("\nIncorporate these files into existing pack? (y/N) ")
     if response.lower() != "y":
         sys.exit()
 
+    print("\n----------------------------------")
+    print("Copying files to target location:")
+    print("----------------------------------")
+
     # Copy OGG files to the target folder, creating folder structure if it doesn't exist
     shutil.copytree(args.source, args.target, ignore=include_patterns("*.ogg"), dirs_exist_ok=True)
 
+    print("\nIncorporating JSON records into target sounds.json")
+
+    target_json_file = args.target.parent / "minecraft" / "sounds.json"
+    if target_json_file.resolve() is None:
+        sys.exit("\nERROR: Target sounds.json file cannot be found.")
+
     # Combine JSON files
-    print("JSON combining code has yet to be written")
+    # print("JSON combining code has yet to be written")
+    combined_json = get_combined_json(sorted_events, target_json_file)
+
+    # Write the finished file to the target folder
+    with open(target_json_file, "w") as fp:
+        json.dump(combined_json, fp, indent=4, cls=CompactJSONEncoder)
+
+    # Show the user what was written to the target folder
+    print(f"\nfile created in {target_json_file.parent} with the following contents:\n")
+    print(json.dumps(sorted_events, indent=4, cls=CompactJSONEncoder, sort_keys=True))
 
 
 # ------------------------------------------------------

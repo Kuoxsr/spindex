@@ -159,19 +159,37 @@ To run the script, you need a [python 3.11 environment](https://www.python.org/d
 If this giant set of instructions hasn't deterred you, and the previous paragraph doesn't scare you away, pass the path to your namespace folder into the script via command-line parameter, like so:
 
 ```
-[you@localhost:~/dev/folder]$ ./sound-pack-indexer /path/to/namespace/folder
+[you@localhost:~/dev/folder]$ ./sound-pack-indexer -s /path/to/namespace/folder
 ```
 
 When finished, the script will show the contents it created in the terminal window, and a file called `generated-sounds.json` will be created in your namespace folder.
 
+## Merging the generated file into an existing sound pack
+Once `generated-sounds.json` is created, its contents will be shown in the terminal window. If you specified a target folder in the command, like this:
+
+```
+./sound-pack-indexer -s /path/to/namespace-folder -t /path/to/sound/pack
+```
+
+... or, if you put the script in your path, gave it an alias, and executed it from within the source folder, like this:
+
+```
+[you@localhost:/path/to/namespace-folder]$ packindex -t /path/to/sound/pack
+```
+
+...you'll be asked whether you want to copy the files to the target folder.
+
+Answering "y" to this question does two things:
+
+1. All the `.ogg` files in your staging area's folder structure will be copied to the target location's folder structure and overwrite any existing files by the same name that it finds there.
+2. The JSON data in `generated-sounds.json` will be merged into the `sounds.json` file in your existing sound pack.
+
+## This script only works in Linux
 I have not tested whether this script runs in a Windows environment, only Linux.  Your mileage may vary.  If you try it in Windows and it doesn't work, fix the problem and submit a pull request.  An issue in the bug tracker for that particular problem will likely go nowhere, because I do not own a copy of Windows in which to test.  If it _does_ work in Windows, let me know so that I can remove this paragraph.
 
 ## Final Thoughts
 This script should be run only once on a particular data set to generate a JSON file, and then that JSON should be incorporated into your resource pack, either by copying in the entire JSON file (in the case of a new, clean project) or individual lists of sound files should be copy/pasted from the generated file to an existing `sounds.json` file.  Create backups of your resource pack before you do any of this, or use a [git](https://git-scm.com/) repository like a civilized person.
 
 Why did I use the term "indexer?"  I came up with that in my initial planning, and either couldn't think of anything better or just didn't want to bother wasting brain power on a name, so now I'm stuck with it.
-
-## Future plans
-My notes currently contain the idea to create code that automatically copies `.ogg` files into an existing resource pack and automatically incorporate JSON records into an existing `sounds.json` file.  I have been procrastinating on that, because it seems difficult to do, and because I'm already procrastinating on editing sound clips by writing this script (and this document.)  If you know Python and would like to help out, feel free to code a solution for this and submit a pull request.  I can't explain how to submit a pull request, because I've never actually done it myself, so you're on your own.  Have fun!
 
 Thanks for your interest in my project!

@@ -19,7 +19,7 @@ Command-line arguments:
     --version   (-v)    Show version number
 """
 
-__version__ = '0.15'
+__version__ = '0.16'
 __maintainer__ = "kuoxsr@gmail.com"
 __status__ = "Prototype"
 
@@ -266,7 +266,7 @@ def main():
     max_folders: int = len(max_list[max_list.index("sounds")+1:])
 
     # Build dictionary
-    events: dict[SoundEvent] = {}
+    events: dict[str, SoundEvent] = {}
     known_events: list[str] = []
     for f in sound_files:
 

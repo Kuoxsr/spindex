@@ -19,7 +19,7 @@ Command-line arguments:
     --version   (-v)    Show version number
 """
 
-__version__ = '0.14'
+__version__ = '0.15'
 __maintainer__ = "kuoxsr@gmail.com"
 __status__ = "Prototype"
 
@@ -29,6 +29,7 @@ from collections import OrderedDict
 from json_encoder import CompactJSONEncoder
 from pathlib import Path
 from tinytag import TinyTag
+from typing import TypedDict, NotRequired
 
 import argparse
 import json
@@ -36,6 +37,23 @@ import pathlib
 import re
 import shutil
 import sys
+
+
+class Sound(TypedDict):
+    name: str
+    volume: NotRequired[float]
+    pitch: NotRequired[float]
+    weight: NotRequired[int]
+    stream: NotRequired[bool]
+    attenuation_distance: NotRequired[int]
+    preload: NotRequired[bool]
+    type: NotRequired[str]
+
+
+class SoundEvent(TypedDict):
+    replace: bool
+    sounds: list[Sound]
+    subtitle: str
 
 
 def handle_command_line():
@@ -179,7 +197,7 @@ def include_patterns(*patterns):
     return _ignore_patterns
 
 
-def get_event_dictionary(path: Path) -> dict[str, dict[str, str | bool | list[dict[str, str | float]]]]:  # dict[str, dict[str, str | bool | list[dict[str, str | float]]]]:
+def get_event_dictionary(path: Path) -> dict[SoundEvent]:
     """Loads a json file from disk"""
 
     # If the file is empty, return an empty object
@@ -190,7 +208,7 @@ def get_event_dictionary(path: Path) -> dict[str, dict[str, str | bool | list[di
         return dict(json.load(read_file))
 
 
-def get_combined_json(source_events, target_path) -> dict[str, dict[str, str | bool | list[dict[str, str | float]]]]:
+def get_combined_json(source_events, target_path) -> dict[SoundEvent]:
 
     # If target is empty, just return source
     result = get_event_dictionary(target_path)
@@ -248,7 +266,7 @@ def main():
     max_folders: int = len(max_list[max_list.index("sounds")+1:])
 
     # Build dictionary
-    events: dict[str, dict[str, bool | list[dict[str, str | float]]], str] = {}
+    events: dict[SoundEvent] = {}
     known_events: list[str] = []
     for f in sound_files:
 
@@ -299,7 +317,7 @@ def main():
 
             # Only consider the metadata valid if it is valid JSON format
             try:
-                tags: dict[str, str | float | bool] = {} if not metadata else json.loads(metadata)
+                tags: dict[Sound] = {} if not metadata else json.loads(metadata)
             except ValueError:
                 warnings.append(f"{f}\nFile metadata is not valid JSON: ({metadata})")
                 continue

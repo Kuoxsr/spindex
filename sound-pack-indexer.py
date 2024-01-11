@@ -208,7 +208,20 @@ def get_event_dictionary(path: Path) -> dict[SoundEvent]:
         return dict(json.load(read_file))
 
 
-def get_combined_json(source_events, target_path) -> dict[SoundEvent]:
+def get_sound_name_start_index(sound_files: list[Path]) -> int:
+
+    # Show me the maximum number of folders between "sounds" and the ogg file
+    # This is an attempt to auto-detect the starting position of the sound event name
+    max_list: tuple = max([x.parent.parts for x in sound_files], key=len)
+    max_folders: int = len(max_list[max_list.index("sounds")+1:])
+
+    # Calculate the starting index of the file path that belongs in the json data
+    typical_event_length = 3
+    adj_index: int = max_folders - typical_event_length
+    return 0 if adj_index < 0 else adj_index
+
+
+def get_combined_events(source_events, target_path) -> dict[SoundEvent]:
 
     # If target is empty, just return source
     result = get_event_dictionary(target_path)
@@ -236,34 +249,32 @@ def get_combined_json(source_events, target_path) -> dict[SoundEvent]:
     return result
 
 
-# Main -------------------------------------------------
-def main():
+def get_generated_events(
+        source_path: Path,
+        sound_files: list[Path],
+        sound_name_start_index: int) -> tuple[dict[str, SoundEvent], list[str]]:
     """
-    Main program loop
-    This function generates a sounds.json file from a folder structure of .ogg files
+    Takes a list of sound file paths and generates JSON records in the same format
+     as a Minecraft sounds.json file
+
+    :param source_path: The path to the folder where all of these files come from
+    :param sound_files: The list of .ogg file names in your folder structure
+    :param sound_name_start_index: Where the path should be trimmed to form the JSON that MC expects
+    :return: A tuple containing the following items:
+        A dictionary representing the json data to be written to sounds.json
+        A list of warnings that occurred during the process
     """
 
-    args = handle_command_line()
+    # The name of the namespace that these files belong in
+    namespace: str = source_path.name
 
     # Minecraft's regular expression for valid ogg file names/paths
-    good_name = re.compile("^[a-z0-9/._-]+$")
+    mc_naming_rules = re.compile("^[a-z0-9/._-]+$")
 
     # Regular expression to validate sounds.json key-value pairs
     json_regex = re.compile(get_json_regex())
 
     warnings: list[str] = []
-
-    source: Path = args.source
-    namespace: str = args.source.name
-
-    extensions: list[str] = [".ogg", ".subtitles"]
-    sound_files: list[Path] = sorted([f for f in source.rglob('*') if f.suffix in extensions])
-    # print(*sound_files, sep='\n')
-
-    # Show me the maximum number of folders between "sounds" and the ogg file
-    # This is an attempt to auto-detect the starting position of the sound event name
-    max_list: tuple = max([x.parent.parts for x in sound_files], key=len)
-    max_folders: int = len(max_list[max_list.index("sounds")+1:])
 
     # Build dictionary
     events: dict[str, SoundEvent] = {}
@@ -276,19 +287,16 @@ def main():
             continue
 
         # Only consider files that match naming rules
-        file_from_source: Path = f.relative_to(source.parent)
-        if not good_name.match(str(file_from_source)):
+        file_from_source: Path = f.relative_to(source_path.parent)
+        if not mc_naming_rules.match(str(file_from_source)):
             warnings.append(f"{file_from_source}\nPath does not match valid naming rules")
             continue
 
         # Strip off irrelevant bits from the path
-        file: Path = f.relative_to(source / "sounds")
+        file: Path = f.relative_to(source_path / "sounds")
 
         # Build the event name
-        typical_event_length = 3
-        adj_index: int = max_folders - typical_event_length
-        start_index: int = 0 if adj_index < 0 else adj_index
-        event = ".".join(file.parent.parts[start_index:])
+        event = ".".join(file.parent.parts[sound_name_start_index:])
 
         # Initialize the event if we haven't seen it before
         if event not in known_events:
@@ -299,10 +307,10 @@ def main():
             # Initialize the event
             known_events.append(event)
             events[event] = dict({"replace": True, "sounds": [], "subtitle": subtitle})
-            # print(f"event: {event}")
 
         # build the sound dictionary, and add it to the sounds list
         if file.suffix == ".ogg":
+
             name: str = f"{namespace}:{file.parent}/{file.stem}"
             sound = OrderedDict({"name": name, "volume": 1.0})
 
@@ -324,10 +332,29 @@ def main():
 
             sound.update(tags)
             events[event]["sounds"].append(sound)
-            # print(f"    {sound}")
 
-    # Sort the dictionary by key?
-    sorted_events = {key: val for key, val in sorted(events.items(), key=lambda ele: ele[0])}
+    # Sort the dictionary by key
+    sorted_events: dict[str, SoundEvent] = {key: val for key, val in sorted(events.items(), key=lambda ele: ele[0])}
+    return sorted_events, warnings
+
+
+# Main -------------------------------------------------
+def main():
+    """
+    Main program loop
+    This function generates a sounds.json file from a folder structure of .ogg files
+    """
+
+    args = handle_command_line()
+    source_path: Path = args.source
+    extensions: list[str] = [".ogg", ".subtitles"]
+    sound_files: list[Path] = sorted([f for f in source_path.rglob('*') if f.suffix in extensions])
+    # print(*sound_files, sep='\n')
+
+    sound_name_start_index = get_sound_name_start_index(sound_files)
+
+    # Generate events from our .ogg files, and return any warnings that happened along the way
+    generated_events, warnings = get_generated_events(source_path, sound_files, sound_name_start_index)
 
     # If there are errors, display them and ask the user whether they'd like to proceed
     if len(warnings) > 0:
@@ -341,12 +368,12 @@ def main():
             sys.exit()
 
     # Write the finished file to the source folder
-    with open(source / "generated-sounds.json", "w") as fp:
-        json.dump(sorted_events, fp, indent=4, cls=CompactJSONEncoder)
+    with open(source_path / "generated-sounds.json", "w") as fp:
+        json.dump(generated_events, fp, indent=4, cls=CompactJSONEncoder)
 
     # Show the user what was written to the source folder
-    print(f"\nfile created in {source} with the following contents:\n")
-    print(json.dumps(sorted_events, indent=4, cls=CompactJSONEncoder))
+    print(f"\nfile created in {source_path} with the following contents:\n")
+    print(json.dumps(generated_events, indent=4, cls=CompactJSONEncoder))
 
     # If the user hasn't specified a target folder, just get out
     if args.target.resolve() is None:
@@ -373,7 +400,7 @@ def main():
 
     # Combine JSON files
     # print("JSON combining code has yet to be written")
-    combined_json = get_combined_json(sorted_events, target_json_file)
+    combined_json = get_combined_events(generated_events, target_json_file)
 
     # Write the finished file to the target folder
     with open(target_json_file, "w") as fp:
@@ -381,7 +408,7 @@ def main():
 
     # Show the user what was written to the target folder
     print(f"\nfile created in {target_json_file.parent} with the following contents:\n")
-    print(json.dumps(sorted_events, indent=4, cls=CompactJSONEncoder, sort_keys=True))
+    print(json.dumps(combined_json, indent=4, cls=CompactJSONEncoder, sort_keys=True))
 
 
 # ------------------------------------------------------

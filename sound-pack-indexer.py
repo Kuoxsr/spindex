@@ -10,8 +10,8 @@ Allow the user to copy .ogg files to an existing pack and merge JSON files toget
 Notes:
 
 In order to get this script to work as a command from any directory, I had to add the following
-into my fish.config:
-export PYTHONPATH="$PYTHONPATH:{full path to tinytag sub-folder inside venv folder}
+into my config.fish:
+export PYTHONPATH="$PYTHONPATH:{full path to tinytag sub-folder inside venv folder}"
 
 Command-line arguments:
 
@@ -19,7 +19,7 @@ Command-line arguments:
     --version   (-v)    Show version number
 """
 
-__version__ = '0.16'
+__version__ = '0.17'
 __maintainer__ = "kuoxsr@gmail.com"
 __status__ = "Prototype"
 
@@ -82,6 +82,10 @@ def handle_command_line():
         help="Path to the target folder. Ogg files will be copied here, if allowed.")
 
     args = parser.parse_args()
+
+    # resolve relative paths before validation
+    args.source = args.source.resolve()
+    args.target = args.target.resolve()
 
     if src := validate_source(args.source):
         sys.exit(src.format("source"))
@@ -284,6 +288,10 @@ def get_generated_events(
         # Only consider files under the "sounds" folder
         if "sounds" not in f.parts:
             warnings.append(f"{f}File is not under the 'sounds' folder")
+            continue
+
+        # Only consider files if there is at least one .ogg file in the same folder
+        if len([x for x in f.parent.glob('*.ogg')]) == 0:
             continue
 
         # Only consider files that match naming rules

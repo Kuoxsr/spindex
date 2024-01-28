@@ -62,7 +62,7 @@ def handle_command_line():
     """
 
     parser = argparse.ArgumentParser(
-        prog="Sound Pack Checker",
+        prog="Sound Pack Indexer",
         description="generates lists of invalid connections between json and sound files.")
 
     parser.add_argument("-v", "--version", action="version", version="%(prog)s version " + __version__)

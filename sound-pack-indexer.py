@@ -240,13 +240,18 @@ def get_combined_events(source_events, target_path) -> dict[SoundEvent]:
             result[event_name] = event_details
             continue
 
+        # Process replace directive
         result[event_name]["replace"] = event_details["replace"]
 
         # Process sound files
-        sounds: list = event_details["sounds"]
-        test_list = [s for s in sounds if s not in result[event_name]["sounds"]]
-        result[event_name]["sounds"].extend(test_list)
+        source_sounds: list = event_details["sounds"]
+        new_sounds = [s for s in source_sounds if s not in result[event_name]["sounds"]]
+        result[event_name]["sounds"].extend(new_sounds)
 
+        # Sort the sounds by sound path name
+        result[event_name]["sounds"] = sorted(result[event_name]["sounds"], key=lambda ele: ele["name"])
+
+        # Process subtitle
         result[event_name]["subtitle"] = event_details["subtitle"]
 
     # return empty structure, for now

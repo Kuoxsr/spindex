@@ -19,7 +19,7 @@ Command-line arguments:
     --version   (-v)    Show version number
 """
 
-__version__ = '0.17'
+__version__ = '0.18'
 __maintainer__ = "kuoxsr@gmail.com"
 __status__ = "Prototype"
 
@@ -164,39 +164,38 @@ def get_json_regex() -> str:
     return result
 
 
-def include_patterns(*patterns):
-    """ Function that can be used as shutil.copytree() ignore parameter that
+def everything_but_ogg_files():
+    """ Function that can be used as a shutil.copytree() ignore parameter that
     determines which files *not* to ignore, the inverse of "normal" usage.
 
     This is a factory function that creates a function which can be used as a
     callable for copytree()'s ignore argument, *not* ignoring files that match
     any of the glob-style patterns provided.
 
-    ‛patterns’ are a sequence of pattern strings used to identify the files to
-    include when copying the directory tree.
-
-    Example usage:
-
-        copytree(src_directory, dst_directory, ignore=include_patterns('*.ogg', '*.json'))
-
-    Stolen from user martineau on Stack Overflow
-    https://stackoverflow.com/questions/35155382/copying-specific-files-to-a-new-folder-while-maintaining-the-original-subdirect/35161407#35161407
+    Stolen from user martineau on Stack Overflow, and heavily modified for my own use-case
+    https://stackoverflow.com/a/35161407
     """
     def _ignore_patterns(path, all_names):
 
-        # Set up files to keep based on incoming pattern(s)
-        keep_files: set(str) = set()
-        for p in patterns:
-            g = (x.name for x in pathlib.Path(path).glob(p))
-            keep_files.update(g)
+        files_to_ignore: set[str] = set()
+        for name in all_names:
 
-        # Determine names which match one or more patterns (that shouldn't be ignored)
-        keep = (name for pattern in patterns for name in keep_files)
+            name_to_check = (Path(path) / name)
 
-        # Ignore file names which *didn't* match any of the patterns given that aren't directory names.
-        dir_names = (name for name in all_names if (Path(path) / name).is_dir())
+            # Handle differently if name is a directory
+            if name_to_check.is_dir():
 
-        return set(all_names) - set(keep) - set(dir_names)  # - set("generated-sounds.json")
+                # If there are no .ogg files in any of the directory's subdirectories
+                if len([x for x in name_to_check.rglob('*.ogg')]) == 0:
+                    files_to_ignore.add(name)
+
+                continue
+
+            # Ignore files that are not .ogg
+            if name_to_check.suffix != '.ogg':
+                files_to_ignore.add(name)
+
+        return set(files_to_ignore)
 
     return _ignore_patterns
 
@@ -403,7 +402,7 @@ def main():
     print("----------------------------------")
 
     # Copy OGG files to the target folder, creating folder structure if it doesn't exist
-    shutil.copytree(args.source, args.target, ignore=include_patterns("*.ogg"), dirs_exist_ok=True)
+    shutil.copytree(args.source, args.target, ignore=everything_but_ogg_files(), dirs_exist_ok=True)
 
     print("\nIncorporating JSON records into target sounds.json")
 

@@ -19,7 +19,7 @@ Command-line arguments:
     --version   (-v)    Show version number
 """
 
-__version__ = '0.18'
+__version__ = '0.19'
 __maintainer__ = "kuoxsr@gmail.com"
 __status__ = "Prototype"
 
@@ -350,6 +350,33 @@ def get_generated_events(
     return sorted_events, warnings
 
 
+def get_string_path_relative_to_sounds_folder(path: Path) -> str:
+
+    # Find index of "sounds" folder
+    sounds_index: int = path.parts.index("sounds")
+
+    # build string based on the parts that are relative to the index
+    return "/".join(path.parts[sounds_index:])
+
+
+def check_for_overwritten_files(source_path, target_path) -> list[str]:
+
+    warnings: list[str] = list()
+
+    # pull lists of files from both source and target
+    source_files: list[str] = list(get_string_path_relative_to_sounds_folder(f) for f in source_path.rglob("*.ogg"))
+    target_files: list[str] = list(get_string_path_relative_to_sounds_folder(f) for f in target_path.rglob("*.ogg"))
+
+    # Loop through source list
+    for file in source_files:
+
+        # If the file will overwrite a file in the target, add its path to the warnings
+        if file in target_files:
+            warnings.append(f".../{file}")
+
+    return warnings
+
+
 # Main -------------------------------------------------
 def main():
     """
@@ -400,6 +427,17 @@ def main():
     print("\n----------------------------------")
     print("Copying files to target location:")
     print("----------------------------------")
+
+    overwrite_warnings = check_for_overwritten_files(args.source, args.target)
+    if len(overwrite_warnings) > 0:
+        print(f"\nFiles could be overwritten during this process.  {len(overwrite_warnings)} warning(s):")
+
+        for w in overwrite_warnings:
+            print(f"\n{w}")
+
+        response = input("\nWould you like to continue? (y/N) ")
+        if response.lower() != "y":
+            sys.exit()
 
     # Copy OGG files to the target folder, creating folder structure if it doesn't exist
     shutil.copytree(args.source, args.target, ignore=everything_but_ogg_files(), dirs_exist_ok=True)

@@ -19,7 +19,7 @@ Command-line arguments:
     --version   (-v)    Show version number
 """
 
-__version__ = '0.19'
+__version__ = '0.20'
 __maintainer__ = "kuoxsr@gmail.com"
 __status__ = "Prototype"
 
@@ -384,6 +384,10 @@ def main():
     This function generates a sounds.json file from a folder structure of .ogg files
     """
 
+    green = "\033[32m"
+    red = "\033[31m"
+    default = "\033[0m"
+
     args = handle_command_line()
     source_path: Path = args.source
     extensions: list[str] = [".ogg", ".subtitles"]
@@ -392,18 +396,23 @@ def main():
 
     sound_name_start_index = get_sound_name_start_index(sound_files)
 
+    print(f"{green}\n-----------------------------------")
+    print("Processing staging area ogg files:")
+    print(f"-----------------------------------{default}")
+
     # Generate events from our .ogg files, and return any warnings that happened along the way
     generated_events, warnings = get_generated_events(source_path, sound_files, sound_name_start_index)
 
     # If there are errors, display them and ask the user whether they'd like to proceed
     if len(warnings) > 0:
-        print(f"\nThere were {len(warnings)} warnings during the process:")
+        print(f"\nThere were {len(warnings)} warnings during the process:{red}")
 
         for w in warnings:
-            print(f"\n{w}")
+            print(w)
 
-        response = input("\nWould you like to continue? (y/N) ")
+        response = input(f"{default}\nWould you like to continue? (y/N) ")
         if response.lower() != "y":
+            print(default)
             sys.exit()
 
     # Write the finished file to the source folder
@@ -424,32 +433,34 @@ def main():
     if response.lower() != "y":
         sys.exit()
 
-    print("\n----------------------------------")
+    print(f"{green}\n\n----------------------------------")
     print("Copying files to target location:")
-    print("----------------------------------")
+    print(f"----------------------------------{default}")
 
     overwrite_warnings = check_for_overwritten_files(args.source, args.target)
     if len(overwrite_warnings) > 0:
-        print(f"\nFiles could be overwritten during this process.  {len(overwrite_warnings)} warning(s):")
+        print(f"\nFiles could be overwritten during this process.  {len(overwrite_warnings)} warning(s):\n{red}")
 
         for w in overwrite_warnings:
-            print(f"\n{w}")
+            print(w)
 
-        response = input("\nWould you like to continue? (y/N) ")
+        response = input(f"{default}\nWould you like to overwrite these files? (y/N) ")
         if response.lower() != "y":
+            print(default)
             sys.exit()
 
     # Copy OGG files to the target folder, creating folder structure if it doesn't exist
     shutil.copytree(args.source, args.target, ignore=everything_but_ogg_files(), dirs_exist_ok=True)
 
-    print("\nIncorporating JSON records into target sounds.json")
+    print(f"{green}\n\n----------------------------------------------------")
+    print("Incorporating JSON records into target sounds.json:")
+    print(f"----------------------------------------------------{default}")
 
     target_json_file = args.target.parent / "minecraft" / "sounds.json"
     if target_json_file.resolve() is None:
-        sys.exit("\nERROR: Target sounds.json file cannot be found.")
+        sys.exit(f"{red}\nERROR: Target sounds.json file cannot be found.{default}")
 
     # Combine JSON files
-    # print("JSON combining code has yet to be written")
     combined_json = get_combined_events(generated_events, target_json_file)
 
     # Write the finished file to the target folder

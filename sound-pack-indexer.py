@@ -19,7 +19,7 @@ Command-line arguments:
     --version   (-v)    Show version number
 """
 
-__version__ = '0.20'
+__version__ = '0.21'
 __maintainer__ = "kuoxsr@gmail.com"
 __status__ = "Prototype"
 
@@ -63,7 +63,9 @@ def handle_command_line():
 
     parser = argparse.ArgumentParser(
         prog="Sound Pack Indexer",
-        description="generates lists of invalid connections between json and sound files.")
+        formatter_class=argparse.RawDescriptionHelpFormatter,
+        description="Generates a json index from folders full of .ogg files. "
+                    "\nOptionally allows automatic merging of this generated file with an existing pack.")
 
     parser.add_argument("-v", "--version", action="version", version="%(prog)s version " + __version__)
 

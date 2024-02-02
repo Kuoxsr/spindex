@@ -19,7 +19,7 @@ Command-line arguments:
     --version   (-v)    Show version number
 """
 
-__version__ = '0.21'
+__version__ = '0.22'
 __maintainer__ = "kuoxsr@gmail.com"
 __status__ = "Prototype"
 
@@ -68,6 +68,12 @@ def handle_command_line():
                     "\nOptionally allows automatic merging of this generated file with an existing pack.")
 
     parser.add_argument("-v", "--version", action="version", version="%(prog)s version " + __version__)
+
+    parser.add_argument(
+        "-i",
+        "--index-only",
+        action='store_true',
+        help="Only produce the generated-sounds.json file and then exit.")
 
     parser.add_argument(
         "-s",
@@ -425,8 +431,8 @@ def main():
     print(f"\nfile created in {source_path} with the following contents:\n")
     print(json.dumps(generated_events, indent=4, cls=CompactJSONEncoder))
 
-    # If the user hasn't specified a target folder, just get out
-    if args.target.resolve() is None:
+    # Just get out if index-only mode is set or if no target folder specified
+    if args.index_only or args.target.resolve() is None:
         sys.exit()
 
     # Ask the user whether we should copy files to the target folder

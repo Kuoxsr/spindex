@@ -19,7 +19,7 @@ Command-line arguments:
     --version   (-v)    Show version number
 """
 
-__version__ = '0.24'
+__version__ = '0.25'
 __maintainer__ = "kuoxsr@gmail.com"
 __status__ = "Prototype"
 
@@ -103,17 +103,16 @@ def handle_command_line():
 
     args = parser.parse_args()
 
-    # resolve relative paths before validation
-    args.source = args.source.resolve()
-    args.target = args.target.resolve()
-
     if src := validate_source(args.source):
         sys.exit(src.format("source"))
 
     if tgt := validate_target(args.target):
         sys.exit(tgt.format("target"))
 
-    # print(f"args: {args}"); sys.exit()
+    # resolve relative paths
+    args.source = args.source.resolve()
+    args.target = args.target.resolve()
+
     return args
 
 

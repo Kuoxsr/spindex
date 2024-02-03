@@ -19,7 +19,7 @@ Command-line arguments:
     --version   (-v)    Show version number
 """
 
-__version__ = '0.23'
+__version__ = '0.24'
 __maintainer__ = "kuoxsr@gmail.com"
 __status__ = "Prototype"
 
@@ -80,6 +80,12 @@ def handle_command_line():
         "--quiet",
         action='store_true',
         help="Suppress printing of json file contents. Only show warnings.")
+
+    parser.add_argument(
+        "-a",
+        "--abort-warnings",
+        action='store_true',
+        help="Treat all warnings as fatal errors, and exit as soon as they occur.")
 
     parser.add_argument(
         "-s",
@@ -425,6 +431,9 @@ def main():
         for w in warnings:
             print(w)
 
+        if args.abort_warnings:
+            sys.exit(f"\n{default}Script execution cannot continue.")
+
         response = input(f"{default}\nWould you like to continue? (y/N) ")
         if response.lower() != "y":
             print(default)
@@ -460,6 +469,9 @@ def main():
 
         for w in overwrite_warnings:
             print(w)
+
+        if args.abort_warnings:
+            sys.exit(f"\n{default}Script execution cannot continue.")
 
         response = input(f"{default}\nWould you like to overwrite these files? (y/N) ")
         if response.lower() != "y":

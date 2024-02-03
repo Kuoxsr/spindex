@@ -19,7 +19,7 @@ Command-line arguments:
     --version   (-v)    Show version number
 """
 
-__version__ = '0.22'
+__version__ = '0.23'
 __maintainer__ = "kuoxsr@gmail.com"
 __status__ = "Prototype"
 
@@ -74,6 +74,12 @@ def handle_command_line():
         "--index-only",
         action='store_true',
         help="Only produce the generated-sounds.json file and then exit.")
+
+    parser.add_argument(
+        "-q",
+        "--quiet",
+        action='store_true',
+        help="Suppress printing of json file contents. Only show warnings.")
 
     parser.add_argument(
         "-s",
@@ -404,9 +410,10 @@ def main():
 
     sound_name_start_index = get_sound_name_start_index(sound_files)
 
-    print(f"{green}\n-----------------------------------")
-    print("Processing staging area ogg files:")
-    print(f"-----------------------------------{default}")
+    if not args.quiet:
+        print(f"{green}\n-----------------------------------")
+        print("Processing staging area ogg files:")
+        print(f"-----------------------------------{default}")
 
     # Generate events from our .ogg files, and return any warnings that happened along the way
     generated_events, warnings = get_generated_events(source_path, sound_files, sound_name_start_index)
@@ -427,9 +434,10 @@ def main():
     with open(source_path / "generated-sounds.json", "w") as fp:
         json.dump(generated_events, fp, indent=4, cls=CompactJSONEncoder)
 
-    # Show the user what was written to the source folder
-    print(f"\nfile created in {source_path} with the following contents:\n")
-    print(json.dumps(generated_events, indent=4, cls=CompactJSONEncoder))
+    # Show the user what was written to the source folder, unless in quiet mode
+    if not args.quiet:
+        print(f"\nfile created in {source_path} with the following contents:\n")
+        print(json.dumps(generated_events, indent=4, cls=CompactJSONEncoder))
 
     # Just get out if index-only mode is set or if no target folder specified
     if args.index_only or args.target.resolve() is None:
@@ -441,9 +449,10 @@ def main():
     if response.lower() != "y":
         sys.exit()
 
-    print(f"{green}\n\n----------------------------------")
-    print("Copying files to target location:")
-    print(f"----------------------------------{default}")
+    if not args.quiet:
+        print(f"{green}\n\n----------------------------------")
+        print("Copying files to target location:")
+        print(f"----------------------------------{default}")
 
     overwrite_warnings = check_for_overwritten_files(args.source, args.target)
     if len(overwrite_warnings) > 0:
@@ -460,9 +469,10 @@ def main():
     # Copy OGG files to the target folder, creating folder structure if it doesn't exist
     shutil.copytree(args.source, args.target, ignore=everything_but_ogg_files(), dirs_exist_ok=True)
 
-    print(f"{green}\n\n----------------------------------------------------")
-    print("Incorporating JSON records into target sounds.json:")
-    print(f"----------------------------------------------------{default}")
+    if not args.quiet:
+        print(f"{green}\n\n----------------------------------------------------")
+        print("Incorporating JSON records into target sounds.json:")
+        print(f"----------------------------------------------------{default}")
 
     target_json_file = args.target.parent / "minecraft" / "sounds.json"
     if target_json_file.resolve() is None:
@@ -475,9 +485,10 @@ def main():
     with open(target_json_file, "w") as fp:
         json.dump(combined_json, fp, indent=4, cls=CompactJSONEncoder)
 
-    # Show the user what was written to the target folder
-    print(f"\nfile created in {target_json_file.parent} with the following contents:\n")
-    print(json.dumps(combined_json, indent=4, cls=CompactJSONEncoder, sort_keys=True))
+    # Show the user what was written to the target folder, unless in quiet mode
+    if not args.quiet:
+        print(f"\nfile created in {target_json_file.parent} with the following contents:\n")
+        print(json.dumps(combined_json, indent=4, cls=CompactJSONEncoder, sort_keys=True))
 
 
 # ------------------------------------------------------

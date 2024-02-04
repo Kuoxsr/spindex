@@ -19,7 +19,7 @@ Command-line arguments:
     --version   (-v)    Show version number
 """
 
-__version__ = '0.27'
+__version__ = '0.28'
 __maintainer__ = "kuoxsr@gmail.com"
 __status__ = "Prototype"
 
@@ -219,7 +219,7 @@ def everything_but_ogg_files():
     return _ignore_patterns
 
 
-def get_event_dictionary(path: Path) -> dict[SoundEvent]:
+def get_event_dictionary(path: Path) -> dict[str, SoundEvent]:
     """Loads a json file from disk"""
 
     # If the file is empty, return an empty object
@@ -243,9 +243,9 @@ def get_sound_name_start_index(sound_files: list[Path]) -> int:
     return 0 if adj_index < 0 else adj_index
 
 
-def get_combined_events(source_events: dict[SoundEvent], target_events: dict[SoundEvent]) -> dict[SoundEvent]:
+def get_combined_events(source_events: dict[str, SoundEvent], target_events: dict[str, SoundEvent]) -> dict[str, SoundEvent]:
 
-    result: dict[SoundEvent] = target_events
+    result: dict[str, SoundEvent] = target_events
 
     # Start by looping through the source dictionary
     for event_name, event_details in source_events.items():

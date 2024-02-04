@@ -19,7 +19,7 @@ Command-line arguments:
     --version   (-v)    Show version number
 """
 
-__version__ = '0.26'
+__version__ = '0.27'
 __maintainer__ = "kuoxsr@gmail.com"
 __status__ = "Prototype"
 
@@ -243,14 +243,11 @@ def get_sound_name_start_index(sound_files: list[Path]) -> int:
     return 0 if adj_index < 0 else adj_index
 
 
-def get_combined_events(source_events, target_path) -> dict[SoundEvent]:
+def get_combined_events(source_events: dict[SoundEvent], target_events: dict[SoundEvent]) -> dict[SoundEvent]:
 
-    # If target is empty, just return source
-    result = get_event_dictionary(target_path)
-    if not result:
-        return source_events
+    result: dict[SoundEvent] = target_events
 
-    # If target has something in it, loop through source
+    # Start by looping through the source dictionary
     for event_name, event_details in source_events.items():
 
         # if result doesn't contain that event yet, we just add all event details and move on
@@ -456,7 +453,7 @@ def main():
         print(json.dumps(generated_events, indent=4, cls=CompactJSONEncoder))
 
     # Just get out if index-only mode is set or if no target folder specified
-    if args.index_only or args.target.resolve() is None:
+    if args.index_only or args.target is None or args.target.resolve() is None:
         sys.exit()
 
     # Ask the user whether we should copy files to the target folder
@@ -500,8 +497,9 @@ def main():
     if target_json_file.resolve() is None:
         sys.exit(f"{red}\nERROR: Target sounds.json file cannot be found.{default}")
 
-    # Combine JSON files
-    combined_json = get_combined_events(generated_events, target_json_file)
+    # Combine JSON files - If target is empty, just use source
+    target_events = get_event_dictionary(target_json_file)
+    combined_json = generated_events if not target_events else get_combined_events(generated_events, target_events)
 
     # Write the finished file to the target folder
     with open(target_json_file, "w") as fp:

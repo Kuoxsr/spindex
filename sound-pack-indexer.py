@@ -19,7 +19,7 @@ Command-line arguments:
     --version   (-v)    Show version number
 """
 
-__version__ = '0.25'
+__version__ = '0.26'
 __maintainer__ = "kuoxsr@gmail.com"
 __status__ = "Prototype"
 
@@ -405,6 +405,7 @@ def main():
 
     green = "\033[32m"
     red = "\033[31m"
+    cyan = "\033[36m"
     default = "\033[0m"
 
     args = handle_command_line()
@@ -419,9 +420,16 @@ def main():
         print(f"{green}\n-----------------------------------")
         print("Processing staging area ogg files:")
         print(f"-----------------------------------{default}")
+        print(f"{cyan}Source folder: {source_path}{default}")
 
     # Generate events from our .ogg files, and return any warnings that happened along the way
     generated_events, warnings = get_generated_events(source_path, sound_files, sound_name_start_index)
+
+    # If nothing was generated, just get out
+    if len(generated_events) == 0:
+        if not args.quiet:
+            print("\nNothing to process")
+        sys.exit()
 
     # If there are errors, display them and ask the user whether they'd like to proceed
     if len(warnings) > 0:
@@ -444,7 +452,7 @@ def main():
 
     # Show the user what was written to the source folder, unless in quiet mode
     if not args.quiet:
-        print(f"\nfile created in {source_path} with the following contents:\n")
+        print(f"\ngenerated-sounds.json contains the following contents:\n")
         print(json.dumps(generated_events, indent=4, cls=CompactJSONEncoder))
 
     # Just get out if index-only mode is set or if no target folder specified
@@ -452,8 +460,8 @@ def main():
         sys.exit()
 
     # Ask the user whether we should copy files to the target folder
-    print(f"\nTarget folder set to existing pack at:\n{args.target}")
-    response = input("\nIncorporate these files into existing pack? (y/N) ")
+    print(f"\nTarget folder set to existing pack at:\n{cyan}{args.target}{default}")
+    response = input("\nIncorporate source files into existing pack? (y/N) ")
     if response.lower() != "y":
         sys.exit()
 
@@ -461,6 +469,7 @@ def main():
         print(f"{green}\n\n----------------------------------")
         print("Copying files to target location:")
         print(f"----------------------------------{default}")
+        print(f"{cyan}Target folder: {args.target}{default}")
 
     overwrite_warnings = check_for_overwritten_files(args.source, args.target)
     if len(overwrite_warnings) > 0:
@@ -480,12 +489,14 @@ def main():
     # Copy OGG files to the target folder, creating folder structure if it doesn't exist
     shutil.copytree(args.source, args.target, ignore=everything_but_ogg_files(), dirs_exist_ok=True)
 
+    target_json_file = args.target.parent / "minecraft" / "sounds.json"
+
     if not args.quiet:
         print(f"{green}\n\n----------------------------------------------------")
         print("Incorporating JSON records into target sounds.json:")
         print(f"----------------------------------------------------{default}")
+        print(f"{cyan}Target file: {target_json_file}{default}")
 
-    target_json_file = args.target.parent / "minecraft" / "sounds.json"
     if target_json_file.resolve() is None:
         sys.exit(f"{red}\nERROR: Target sounds.json file cannot be found.{default}")
 
@@ -498,7 +509,7 @@ def main():
 
     # Show the user what was written to the target folder, unless in quiet mode
     if not args.quiet:
-        print(f"\nfile created in {target_json_file.parent} with the following contents:\n")
+        print(f"\nCombined file has the following contents:\n")
         print(json.dumps(combined_json, indent=4, cls=CompactJSONEncoder, sort_keys=True))
 
 

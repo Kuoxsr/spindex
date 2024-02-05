@@ -157,25 +157,25 @@ def two_sounds_in_different_events() -> dict[str, SoundEvent]:
     return events
 
 
-def test_get_combined_events_empty_target_returns_source(ambient_event, zero_events):
+def test_get_combined_events_should_return_incoming_when_existing_is_empty(ambient_event, zero_events):
     result = get_combined_events(ambient_event, zero_events)
     assert result == ambient_event
 
 
-def test_get_combined_events_empty_source_returns_target(zero_events, ambient_event):
+def test_get_combined_events_should_return_existing_when_incoming_is_empty(zero_events, ambient_event):
     result = get_combined_events(zero_events, ambient_event)
     assert result == ambient_event
 
 
-def test_get_combined_events_name_collision(ambient_event):
+def test_get_combined_events_should_not_duplicate_sounds_that_already_exist(ambient_event):
     result = get_combined_events(ambient_event, ambient_event)
     assert result == ambient_event
 
 
-def test_get_combined_events_one_source_two_targets_same_event(ambient_event, two_sounds_in_same_event):
+def test_get_combined_events_should_add_sounds_to_existing_event(ambient_event, two_sounds_in_same_event):
     """
     Here we are making sure that when we add events with different names
-    we actually get two sounds in the same namespace
+    we actually get multiple sounds in the same namespace
     """
 
     # Build expected combination
@@ -196,10 +196,11 @@ def test_get_combined_events_one_source_two_targets_same_event(ambient_event, tw
     assert result == expected
 
 
-def test_get_combined_events_one_source_two_targets_different_events(ambient_event, two_sounds_in_different_events):
+def test_get_combined_events_should_add_sounds_to_correct_event(
+        ambient_event,
+        two_sounds_in_different_events):
     """
-    Here we are checking whether the incoming record is added to the correct
-    event.  I'm not entirely sure that this is necessary.
+    Here we are checking whether the incoming record is added to the correct event.
     """
 
     # Build expected combination
@@ -226,7 +227,7 @@ def test_get_combined_events_one_source_two_targets_different_events(ambient_eve
     assert result == expected
 
 
-def test_get_combined_events_different_events_no_similarities(ambient_event, death_event):
+def test_get_combined_events_should_add_new_events(ambient_event, death_event):
     """
     Here we are testing whether events are built correctly when there
     are no similarities at all between existing and incoming.

@@ -11,11 +11,11 @@ def zero_events():
 
 
 @pytest.fixture
-def one_event() -> dict[str, SoundEvent]:
+def ambient_event() -> dict[str, SoundEvent]:
 
     event = SoundEvent(
         replace=True,
-        sounds=[Sound(name="namespace:entity/villager/ambient/test01")],
+        sounds=[Sound(name="namespace:entity/villager/ambient/ambient")],
         subtitle="subtitles.entity.villager.ambient")
 
     events = dict[str, SoundEvent]()
@@ -25,11 +25,11 @@ def one_event() -> dict[str, SoundEvent]:
 
 
 @pytest.fixture
-def different_event() -> dict[str, SoundEvent]:
+def death_event() -> dict[str, SoundEvent]:
 
     event = SoundEvent(
         replace=True,
-        sounds=[Sound(name="namespace:entity/villager/death/test02")],
+        sounds=[Sound(name="namespace:entity/villager/death/death")],
         subtitle="subtitles.entity.villager.death")
 
     events = dict[str, SoundEvent]()
@@ -43,7 +43,7 @@ def non_replacing_event() -> dict[str, SoundEvent]:
 
     event = SoundEvent(
         replace=False,
-        sounds=[Sound(name="namespace:entity/villager/ambient/test03")],
+        sounds=[Sound(name="namespace:entity/villager/ambient/non-replacing")],
         subtitle="subtitles.entity.villager.ambient")
 
     events = dict[str, SoundEvent]()
@@ -56,7 +56,7 @@ def non_replacing_event() -> dict[str, SoundEvent]:
 def replace_not_specified_event() -> dict[str, SoundEvent]:
 
     event = SoundEvent(
-        sounds=[Sound(name="namespace:entity/villager/ambient/test04")],
+        sounds=[Sound(name="namespace:entity/villager/ambient/ambient_replace-not-specified")],
         subtitle="subtitles.entity.villager.ambient")
 
     events = dict[str, SoundEvent]()
@@ -66,11 +66,11 @@ def replace_not_specified_event() -> dict[str, SoundEvent]:
 
 
 @pytest.fixture
-def non_replacing_different_event() -> dict[str, SoundEvent]:
+def hurt_event_non_replacing() -> dict[str, SoundEvent]:
 
     event = SoundEvent(
         replace=False,
-        sounds=[Sound(name="namespace:entity/villager/hurt/test05")],
+        sounds=[Sound(name="namespace:entity/villager/hurt/hurt-non-replacing")],
         subtitle="subtitles.entity.villager.hurt")
 
     events = dict[str, SoundEvent]()
@@ -82,8 +82,8 @@ def non_replacing_different_event() -> dict[str, SoundEvent]:
 @pytest.fixture
 def two_sounds_in_same_event() -> dict[str, SoundEvent]:
 
-    sound1 = Sound(name="namespace:entity/villager/ambient/test10")
-    sound2 = Sound(name="namespace:entity/villager/ambient/test20")
+    sound1 = Sound(name="namespace:entity/villager/ambient/ambient10")
+    sound2 = Sound(name="namespace:entity/villager/ambient/ambient20")
 
     event = SoundEvent(
         replace=True,
@@ -99,8 +99,8 @@ def two_sounds_in_same_event() -> dict[str, SoundEvent]:
 @pytest.fixture
 def two_sounds_in_different_events() -> dict[str, SoundEvent]:
 
-    sound1 = Sound(name="namespace:entity/villager/ambient/test10")
-    sound2 = Sound(name="namespace:entity/villager/celebrate/test20")
+    sound1 = Sound(name="namespace:entity/villager/ambient/ambient10")
+    sound2 = Sound(name="namespace:entity/villager/yes/yes20")
 
     event1 = SoundEvent(
         replace=True,
@@ -110,40 +110,40 @@ def two_sounds_in_different_events() -> dict[str, SoundEvent]:
     event2 = SoundEvent(
         replace=True,
         sounds=[sound2],
-        subtitle="subtitles.entity.villager.celebrate")
+        subtitle="subtitles.entity.villager.yes")
 
     events = dict[str, SoundEvent]()
     events["entity.villager.ambient"] = event1
-    events["entity.villager.celebrate"] = event2
+    events["entity.villager.yes"] = event2
 
     return events
 
 
-def test_get_combined_events_empty_target_returns_source(one_event, zero_events):
-    result = get_combined_events(one_event, zero_events)
-    assert result == one_event
+def test_get_combined_events_empty_target_returns_source(ambient_event, zero_events):
+    result = get_combined_events(ambient_event, zero_events)
+    assert result == ambient_event
 
 
-def test_get_combined_events_empty_source_returns_target(zero_events, one_event):
-    result = get_combined_events(zero_events, one_event)
-    assert result == one_event
+def test_get_combined_events_empty_source_returns_target(zero_events, ambient_event):
+    result = get_combined_events(zero_events, ambient_event)
+    assert result == ambient_event
 
 
-def test_get_combined_events_name_collision(one_event):
-    result = get_combined_events(one_event, one_event)
-    assert result == one_event
+def test_get_combined_events_name_collision(ambient_event):
+    result = get_combined_events(ambient_event, ambient_event)
+    assert result == ambient_event
 
 
-def test_get_combined_events_one_source_two_targets_same_event(one_event, two_sounds_in_same_event):
+def test_get_combined_events_one_source_two_targets_same_event(ambient_event, two_sounds_in_same_event):
     """
     Here we are making sure that when we add events with different names
     we actually get two sounds in the same namespace
     """
 
     # Build expected combination
-    sound1 = Sound(name="namespace:entity/villager/ambient/test01")
-    sound2 = Sound(name="namespace:entity/villager/ambient/test10")
-    sound3 = Sound(name="namespace:entity/villager/ambient/test20")
+    sound1 = Sound(name="namespace:entity/villager/ambient/ambient")
+    sound2 = Sound(name="namespace:entity/villager/ambient/ambient10")
+    sound3 = Sound(name="namespace:entity/villager/ambient/ambient20")
 
     event = SoundEvent(
         replace=True,
@@ -154,20 +154,20 @@ def test_get_combined_events_one_source_two_targets_same_event(one_event, two_so
     expected["entity.villager.ambient"] = event
 
     # Call the function under test, and check the result
-    result = get_combined_events(one_event, two_sounds_in_same_event)
+    result = get_combined_events(ambient_event, two_sounds_in_same_event)
     assert result == expected
 
 
-def test_get_combined_events_one_source_two_targets_different_events(one_event, two_sounds_in_different_events):
+def test_get_combined_events_one_source_two_targets_different_events(ambient_event, two_sounds_in_different_events):
     """
     Here we are checking whether the incoming record is added to the correct
     event.  I'm not entirely sure that this is necessary.
     """
 
     # Build expected combination
-    sound1 = Sound(name="namespace:entity/villager/ambient/test01")
-    sound2 = Sound(name="namespace:entity/villager/ambient/test10")
-    sound3 = Sound(name="namespace:entity/villager/celebrate/test20")
+    sound1 = Sound(name="namespace:entity/villager/ambient/ambient")
+    sound2 = Sound(name="namespace:entity/villager/ambient/ambient10")
+    sound3 = Sound(name="namespace:entity/villager/yes/yes20")
 
     event1 = SoundEvent(
         replace=True,
@@ -177,18 +177,18 @@ def test_get_combined_events_one_source_two_targets_different_events(one_event, 
     event2 = SoundEvent(
         replace=True,
         sounds=[sound3],
-        subtitle="subtitles.entity.villager.celebrate")
+        subtitle="subtitles.entity.villager.yes")
 
     expected = dict[str, SoundEvent]()
     expected["entity.villager.ambient"] = event1
-    expected["entity.villager.celebrate"] = event2
+    expected["entity.villager.yes"] = event2
 
     # Call the function under test, and check the result
-    result = get_combined_events(one_event, two_sounds_in_different_events)
+    result = get_combined_events(ambient_event, two_sounds_in_different_events)
     assert result == expected
 
 
-def test_get_combined_events_different_events_no_similarities(one_event, different_event):
+def test_get_combined_events_different_events_no_similarities(ambient_event, death_event):
     """
     Here we are testing whether events are built correctly when there
     are no similarities at all between existing and incoming.
@@ -197,12 +197,12 @@ def test_get_combined_events_different_events_no_similarities(one_event, differe
     # Build expected combination
     event1 = SoundEvent(
         replace=True,
-        sounds=[Sound(name="namespace:entity/villager/ambient/test01")],
+        sounds=[Sound(name="namespace:entity/villager/ambient/ambient")],
         subtitle="subtitles.entity.villager.ambient")
 
     event2 = SoundEvent(
         replace=True,
-        sounds=[Sound(name="namespace:entity/villager/death/test02")],
+        sounds=[Sound(name="namespace:entity/villager/death/death")],
         subtitle="subtitles.entity.villager.death")
 
     expected = dict[str, SoundEvent]()
@@ -210,11 +210,11 @@ def test_get_combined_events_different_events_no_similarities(one_event, differe
     expected["entity.villager.death"] = event2
 
     # Call the function under test, and check the result
-    result = get_combined_events(one_event, different_event)
+    result = get_combined_events(ambient_event, death_event)
     assert result == expected
 
 
-def test_get_combined_events_sounds_should_be_sorted_by_name(two_sounds_in_same_event, one_event):
+def test_get_combined_events_sounds_should_be_sorted_by_name(two_sounds_in_same_event, ambient_event):
     """
     Here we are deliberately making the existing sounds *after* the incoming
     record to test whether it sorts the resulting list correctly or just adds
@@ -222,9 +222,9 @@ def test_get_combined_events_sounds_should_be_sorted_by_name(two_sounds_in_same_
     """
 
     # Build expected combination
-    sound1 = Sound(name="namespace:entity/villager/ambient/test01")
-    sound2 = Sound(name="namespace:entity/villager/ambient/test10")
-    sound3 = Sound(name="namespace:entity/villager/ambient/test20")
+    sound1 = Sound(name="namespace:entity/villager/ambient/ambient")
+    sound2 = Sound(name="namespace:entity/villager/ambient/ambient10")
+    sound3 = Sound(name="namespace:entity/villager/ambient/ambient20")
 
     event = SoundEvent(
         replace=True,
@@ -235,12 +235,48 @@ def test_get_combined_events_sounds_should_be_sorted_by_name(two_sounds_in_same_
     expected["entity.villager.ambient"] = event
 
     # Call the function under test, and check the result
-    result = get_combined_events(two_sounds_in_same_event, one_event)
+    result = get_combined_events(two_sounds_in_same_event, ambient_event)
+    assert result == expected
+
+
+def test_get_combined_events_should_sort_events_by_event_name(death_event, two_sounds_in_different_events):
+    """
+    This test is to make sure that the entire dictionary is being sorted by
+    event name.
+    """
+
+    # Build expected combination
+    sound1 = Sound(name="namespace:entity/villager/ambient/ambient10")
+    sound2 = Sound(name="namespace:entity/villager/death/death")
+    sound3 = Sound(name="namespace:entity/villager/yes/yes20")
+
+    event1 = SoundEvent(
+        replace=True,
+        sounds=[sound1],
+        subtitle="subtitles.entity.villager.ambient")
+
+    event2 = SoundEvent(
+        replace=True,
+        sounds=[sound2],
+        subtitle="subtitles.entity.villager.death")
+
+    event3 = SoundEvent(
+        replace=True,
+        sounds=[sound3],
+        subtitle="subtitles.entity.villager.yes")
+
+    expected = dict[str, SoundEvent]()
+    expected["entity.villager.ambient"] = event1
+    expected["entity.villager.death"] = event2
+    expected["entity.villager.yes"] = event3
+
+    # Call the function under test, and check the result
+    result = get_combined_events(death_event, two_sounds_in_different_events)
     assert result == expected
 
 
 def test_get_combined_events_should_not_add_replace_directive_to_existing_event_with_no_replace(
-        one_event,
+        ambient_event,
         replace_not_specified_event):
     """
     Here we are testing to make sure that an incoming record does not add a
@@ -248,8 +284,8 @@ def test_get_combined_events_should_not_add_replace_directive_to_existing_event_
     """
 
     # Build expected combination
-    sound1 = Sound(name="namespace:entity/villager/ambient/test01")
-    sound2 = Sound(name="namespace:entity/villager/ambient/test04")
+    sound1 = Sound(name="namespace:entity/villager/ambient/ambient")
+    sound2 = Sound(name="namespace:entity/villager/ambient/ambient_replace-not-specified")
 
     event = SoundEvent(
         sounds=[sound1, sound2],
@@ -259,19 +295,19 @@ def test_get_combined_events_should_not_add_replace_directive_to_existing_event_
     expected["entity.villager.ambient"] = event
 
     # Call the function under test, and check the result
-    result = get_combined_events(one_event, replace_not_specified_event)
+    result = get_combined_events(ambient_event, replace_not_specified_event)
     assert result == expected
 
 
-def test_get_combined_events_should_not_remove_replace_directive(replace_not_specified_event, one_event):
+def test_get_combined_events_should_not_remove_replace_directive(replace_not_specified_event, ambient_event):
     """
     Here we are testing whether the incoming record will remove a
     "replace": True value if the incoming record doesn't have one
     """
 
     # Build expected combination
-    sound1 = Sound(name="namespace:entity/villager/ambient/test01")
-    sound2 = Sound(name="namespace:entity/villager/ambient/test04")
+    sound1 = Sound(name="namespace:entity/villager/ambient/ambient")
+    sound2 = Sound(name="namespace:entity/villager/ambient/ambient_replace-not-specified")
 
     event = SoundEvent(
         replace=True,
@@ -282,19 +318,19 @@ def test_get_combined_events_should_not_remove_replace_directive(replace_not_spe
     expected["entity.villager.ambient"] = event
 
     # Call the function under test, and check the result
-    result = get_combined_events(replace_not_specified_event, one_event)
+    result = get_combined_events(replace_not_specified_event, ambient_event)
     assert result == expected
 
 
-def test_get_combined_events_should_not_change_existing_replace_directive(one_event, non_replacing_event):
+def test_get_combined_events_should_not_change_existing_replace_directive(ambient_event, non_replacing_event):
     """
     Here we are testing whether the incoming record will change the
     existing "replace": False value on the sound event
     """
 
     # Build expected combination
-    sound1 = Sound(name="namespace:entity/villager/ambient/test01")
-    sound2 = Sound(name="namespace:entity/villager/ambient/test03")
+    sound1 = Sound(name="namespace:entity/villager/ambient/ambient")
+    sound2 = Sound(name="namespace:entity/villager/ambient/non-replacing")
 
     event = SoundEvent(
         replace=False,
@@ -305,21 +341,21 @@ def test_get_combined_events_should_not_change_existing_replace_directive(one_ev
     expected["entity.villager.ambient"] = event
 
     # Call the function under test, and check the result
-    result = get_combined_events(one_event, non_replacing_event)
+    result = get_combined_events(ambient_event, non_replacing_event)
     assert result == expected
 
 
 def test_get_combined_events_should_add_replace_directive_to_new_event(
         replace_not_specified_event,
-        non_replacing_different_event):
+        hurt_event_non_replacing):
     """
     Here we are testing to make sure that the incoming record will include
     a "replace" value when it is generating a new sound event
     """
 
     # Build expected combination
-    sound1 = Sound(name="namespace:entity/villager/ambient/test04")
-    sound2 = Sound(name="namespace:entity/villager/hurt/test05")
+    sound1 = Sound(name="namespace:entity/villager/ambient/ambient_replace-not-specified")
+    sound2 = Sound(name="namespace:entity/villager/hurt/hurt-non-replacing")
 
     event1 = SoundEvent(
         sounds=[sound1],
@@ -335,5 +371,5 @@ def test_get_combined_events_should_add_replace_directive_to_new_event(
     expected["entity.villager.hurt"] = event2
 
     # Call the function under test, and check the result
-    result = get_combined_events(replace_not_specified_event, non_replacing_different_event)
+    result = get_combined_events(replace_not_specified_event, hurt_event_non_replacing)
     assert result == expected

@@ -39,6 +39,44 @@ def death_event() -> dict[str, SoundEvent]:
 
 
 @pytest.fixture
+def trade_event() -> dict[str, SoundEvent]:
+
+    event = SoundEvent(
+        replace=True,
+        sounds=[Sound(name=f"namespace:entity/villager/trade/trade")],
+        subtitle="subtitles.entity.villager.trade")
+
+    events = dict[str, SoundEvent]()
+    events["entity.villager.trade"] = event
+    return events
+
+
+@pytest.fixture
+def trade_event_no_subtitle() -> dict[str, SoundEvent]:
+
+    event = SoundEvent(
+        replace=True,
+        sounds=[Sound(name=f"namespace:entity/villager/trade/trade-no-subtitle")])
+
+    events = dict[str, SoundEvent]()
+    events["entity.villager.trade"] = event
+    return events
+
+
+@pytest.fixture
+def trade_event_bad_subtitle() -> dict[str, SoundEvent]:
+
+    event = SoundEvent(
+        replace=True,
+        sounds=[Sound(name=f"namespace:entity/villager/trade/trade-bad-subtitle")],
+        subtitle="this is not the correct subtitle")
+
+    events = dict[str, SoundEvent]()
+    events["entity.villager.trade"] = event
+    return events
+
+
+@pytest.fixture
 def non_replacing_event() -> dict[str, SoundEvent]:
 
     event = SoundEvent(
@@ -373,3 +411,72 @@ def test_get_combined_events_should_add_replace_directive_to_new_event(
     # Call the function under test, and check the result
     result = get_combined_events(replace_not_specified_event, hurt_event_non_replacing)
     assert result == expected
+
+
+def test_get_combined_events_should_add_subtitle_if_none_exists(trade_event, trade_event_no_subtitle):
+    """
+    This test makes sure that if no subtitle exists, one should be added
+    """
+
+    # Build expected combination
+    sound1 = Sound(name="namespace:entity/villager/trade/trade")
+    sound2 = Sound(name="namespace:entity/villager/trade/trade-no-subtitle")
+
+    event = SoundEvent(
+        replace=True,
+        sounds=[sound1, sound2],
+        subtitle="subtitles.entity.villager.trade")
+
+    expected = dict[str, SoundEvent]()
+    expected["entity.villager.trade"] = event
+
+    # Call the function under test, and check the result
+    result = get_combined_events(trade_event, trade_event_no_subtitle)
+    assert result == expected
+
+
+def test_get_combined_events_should_not_remove_subtitle_if_one_exists(trade_event_no_subtitle, trade_event):
+    """
+    This test makes sure that if an incoming record has no subtitle, it doesn't remove the existing
+    """
+
+    # Build expected combination
+    sound1 = Sound(name="namespace:entity/villager/trade/trade")
+    sound2 = Sound(name="namespace:entity/villager/trade/trade-no-subtitle")
+
+    event = SoundEvent(
+        replace=True,
+        sounds=[sound1, sound2],
+        subtitle="subtitles.entity.villager.trade")
+
+    expected = dict[str, SoundEvent]()
+    expected["entity.villager.trade"] = event
+
+    # Call the function under test, and check the result
+    result = get_combined_events(trade_event_no_subtitle, trade_event)
+    assert result == expected
+
+
+def test_get_combined_events_should_not_change_existing_subtitle(trade_event_bad_subtitle, trade_event):
+    """
+    This test makes sure that if an incoming record has a different subtitle,
+    that it doesn't replace the existing subtitle.
+    """
+
+    # Build expected combination
+    sound1 = Sound(name="namespace:entity/villager/trade/trade")
+    sound2 = Sound(name="namespace:entity/villager/trade/trade-bad-subtitle")
+
+    event = SoundEvent(
+        replace=True,
+        sounds=[sound1, sound2],
+        subtitle="subtitles.entity.villager.trade")
+
+    expected = dict[str, SoundEvent]()
+    expected["entity.villager.trade"] = event
+
+    # Call the function under test, and check the result
+    result = get_combined_events(trade_event_bad_subtitle, trade_event)
+    assert result == expected
+
+

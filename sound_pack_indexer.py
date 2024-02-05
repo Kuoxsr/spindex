@@ -19,7 +19,7 @@ Command-line arguments:
     --version   (-v)    Show version number
 """
 
-__version__ = '0.30'
+__version__ = '0.31'
 __maintainer__ = "kuoxsr@gmail.com"
 __status__ = "Prototype"
 
@@ -51,9 +51,9 @@ class Sound(TypedDict):
 
 
 class SoundEvent(TypedDict):
-    replace: bool
+    replace: NotRequired[bool]
     sounds: list[Sound]
-    subtitle: str
+    subtitle: NotRequired[str]
 
 
 def handle_command_line():
@@ -265,8 +265,9 @@ def get_combined_events(
         # Sort the sounds by sound path name
         result[event_name]["sounds"] = sorted(result[event_name]["sounds"], key=lambda ele: ele["name"])
 
-        # Process subtitle
-        result[event_name]["subtitle"] = incoming_event_details["subtitle"]
+        # Only add a subtitle there is one, and if one doesn't already exist
+        if "subtitle" in incoming_event_details and "subtitle" not in result[event_name]:
+            result[event_name]["subtitle"] = incoming_event_details["subtitle"]
 
     # return empty structure, for now
     return dict(sorted(result.items()))

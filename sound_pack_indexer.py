@@ -19,7 +19,7 @@ Command-line arguments:
     --version   (-v)    Show version number
 """
 
-__version__ = '0.28'
+__version__ = '0.29'
 __maintainer__ = "kuoxsr@gmail.com"
 __status__ = "Prototype"
 
@@ -243,23 +243,22 @@ def get_sound_name_start_index(sound_files: list[Path]) -> int:
     return 0 if adj_index < 0 else adj_index
 
 
-def get_combined_events(source_events: dict[str, SoundEvent], target_events: dict[str, SoundEvent]) -> dict[str, SoundEvent]:
+def get_combined_events(
+        incoming_events: dict[str, SoundEvent],
+        existing_events: dict[str, SoundEvent]) -> dict[str, SoundEvent]:
 
-    result: dict[str, SoundEvent] = target_events
+    result: dict[str, SoundEvent] = existing_events
 
     # Start by looping through the source dictionary
-    for event_name, event_details in source_events.items():
+    for event_name, incoming_event_details in incoming_events.items():
 
         # if result doesn't contain that event yet, we just add all event details and move on
         if event_name not in result.keys():
-            result[event_name] = event_details
+            result[event_name] = incoming_event_details
             continue
 
-        # Process replace directive
-        result[event_name]["replace"] = event_details["replace"]
-
         # Process sound files
-        source_sounds: list = event_details["sounds"]
+        source_sounds: list = incoming_event_details["sounds"]
         new_sounds = [s for s in source_sounds if s not in result[event_name]["sounds"]]
         result[event_name]["sounds"].extend(new_sounds)
 
@@ -267,7 +266,7 @@ def get_combined_events(source_events: dict[str, SoundEvent], target_events: dic
         result[event_name]["sounds"] = sorted(result[event_name]["sounds"], key=lambda ele: ele["name"])
 
         # Process subtitle
-        result[event_name]["subtitle"] = event_details["subtitle"]
+        result[event_name]["subtitle"] = incoming_event_details["subtitle"]
 
     # return empty structure, for now
     return result

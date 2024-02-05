@@ -272,7 +272,7 @@ def test_get_combined_events_should_sort_events_by_event_name(death_event, two_s
 
     # Call the function under test, and check the result
     result = get_combined_events(death_event, two_sounds_in_different_events)
-    assert result == expected
+    assert str(result) == str(expected)
 
 
 def test_get_combined_events_should_not_add_replace_directive_to_existing_event_with_no_replace(

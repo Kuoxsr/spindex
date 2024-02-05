@@ -19,7 +19,7 @@ Command-line arguments:
     --version   (-v)    Show version number
 """
 
-__version__ = '0.29'
+__version__ = '0.30'
 __maintainer__ = "kuoxsr@gmail.com"
 __status__ = "Prototype"
 
@@ -269,7 +269,7 @@ def get_combined_events(
         result[event_name]["subtitle"] = incoming_event_details["subtitle"]
 
     # return empty structure, for now
-    return result
+    return dict(sorted(result.items()))
 
 
 def get_generated_events(

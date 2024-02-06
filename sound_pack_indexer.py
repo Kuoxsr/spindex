@@ -19,41 +19,24 @@ Command-line arguments:
     --version   (-v)    Show version number
 """
 
-__version__ = '0.31'
+__version__ = '0.32'
 __maintainer__ = "kuoxsr@gmail.com"
 __status__ = "Prototype"
 
 
 # Import modules
+from objects.typed_dictionaries import SoundEvent, Sound
+
 from collections import OrderedDict
 from json_encoder import CompactJSONEncoder
 from pathlib import Path
 from tinytag import TinyTag
-from typing import TypedDict, NotRequired
 
 import argparse
 import json
-import pathlib
 import re
 import shutil
 import sys
-
-
-class Sound(TypedDict):
-    name: str
-    volume: NotRequired[float]
-    pitch: NotRequired[float]
-    weight: NotRequired[int]
-    stream: NotRequired[bool]
-    attenuation_distance: NotRequired[int]
-    preload: NotRequired[bool]
-    type: NotRequired[str]
-
-
-class SoundEvent(TypedDict):
-    replace: NotRequired[bool]
-    sounds: list[Sound]
-    subtitle: NotRequired[str]
 
 
 def handle_command_line():

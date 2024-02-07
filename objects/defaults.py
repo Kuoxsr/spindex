@@ -79,7 +79,7 @@ class Defaults:
         default_replace = d["replace"] if "replace" in d else a["replace"] if "replace" in a else True
 
         # Build subtitle from default if one exists, otherwise use event_name
-        subtitle: str = f'subtitles.{d["subtitle"] if "subtitle" in d else event_name}'
+        subtitle: str = d["subtitle"] if "subtitle" in d else f"subtitles.{event_name}"
 
         event: SoundEvent = SoundEvent(
             replace=default_replace,

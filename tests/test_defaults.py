@@ -4,6 +4,121 @@ from objects.typed_dictionaries import SoundEventDefaults, Sound, SoundEvent
 import pytest
 
 
+def test_constructor_should_raise_typeerror_when_volume_not_float():
+
+    event_defaults = SoundEventDefaults(volume="test")
+
+    with pytest.raises(TypeError):
+        Defaults({"test.event": event_defaults})
+
+
+def test_constructor_should_raise_valueerror_when_volume_less_than_zero():
+
+    event_defaults = SoundEventDefaults(volume=-1)
+
+    with pytest.raises(ValueError):
+        Defaults({"test.event": event_defaults})
+
+
+def test_constructor_should_raise_valueerror_when_volume_greater_than_one():
+
+    event_defaults = SoundEventDefaults(volume=1.1)
+
+    with pytest.raises(ValueError):
+        Defaults({"test.event": event_defaults})
+
+
+def test_constructor_should_raise_typeerror_when_pitch_not_float():
+
+    event_defaults = SoundEventDefaults(pitch="test")
+
+    with pytest.raises(TypeError):
+        Defaults({"test.event": event_defaults})
+
+
+def test_constructor_should_raise_typeerror_when_weight_not_int():
+
+    event_defaults = SoundEventDefaults(weight="test")
+
+    with pytest.raises(TypeError):
+        Defaults({"test.event": event_defaults})
+
+
+def test_constructor_should_raise_valueerror_when_weight_less_than_one():
+
+    event_defaults = SoundEventDefaults(weight=0)
+
+    with pytest.raises(ValueError):
+        Defaults({"test.event": event_defaults})
+
+
+def test_constructor_should_raise_valueerror_when_weight_greater_than_32_bit_integer_limit():
+
+    event_defaults = SoundEventDefaults(weight=2_147_483_648)
+
+    with pytest.raises(ValueError):
+        Defaults({"test.event": event_defaults})
+
+
+def test_constructor_should_raise_typeerror_when_stream_not_bool():
+
+    event_defaults = SoundEventDefaults(stream="test")
+
+    with pytest.raises(TypeError):
+        Defaults({"test.event": event_defaults})
+
+
+def test_constructor_should_raise_typeerror_when_attenuation_distance_not_int():
+
+    event_defaults = SoundEventDefaults(attenuation_distance="test")
+
+    with pytest.raises(TypeError):
+        Defaults({"test.event": event_defaults})
+
+
+def test_constructor_should_raise_valueerror_when_attenuation_distance_less_than_zero():
+
+    event_defaults = SoundEventDefaults(attenuation_distance=-1)
+
+    with pytest.raises(ValueError):
+        Defaults({"test.event": event_defaults})
+
+
+def test_constructor_should_raise_valueerror_when_attenuation_distance_greater_than_32_bit_integer_limit():
+
+    event_defaults = SoundEventDefaults(attenuation_distance=2_147_483_648)
+
+    with pytest.raises(ValueError):
+        Defaults({"test.event": event_defaults})
+
+
+def test_constructor_should_raise_typeerror_when_preload_not_bool():
+
+    event_defaults = SoundEventDefaults(preload="test")
+
+    with pytest.raises(TypeError):
+        Defaults({"test.event": event_defaults})
+
+
+def test_constructor_should_raise_typeerror_when_type_not_string():
+
+    event_defaults = SoundEventDefaults(type=1)
+
+    with pytest.raises(TypeError):
+        Defaults({"test.event": event_defaults})
+
+
+def test_constructor_should_raise_valueerror_when_type_not_sound_or_event():
+
+    event_defaults = SoundEventDefaults(type="test")
+
+    with pytest.raises(ValueError):
+        Defaults({"test.event": event_defaults})
+
+
+# ------------------------------------------------------------------------
+
+
 def test_get_sound_event_should_use_event_replace():
 
     event_defaults = SoundEventDefaults(replace=False)
@@ -174,7 +289,7 @@ def test_get_sound_should_use_event_pitch_instead_of_all():
 def test_get_sound_should_use_all_when_no_event_pitch_exists():
 
     all_details = SoundEventDefaults(pitch=5.4)
-    event_defaults = SoundEventDefaults(volume=1.3)
+    event_defaults = SoundEventDefaults(volume=0.3)
     defaults = Defaults({"all": all_details, "test.event": event_defaults})
 
     result = defaults.get_sound("test.event", "test_sound_name")
@@ -314,31 +429,31 @@ def test_get_sound_should_not_include_preload_when_no_default_specified():
 
 def test_get_sound_should_use_event_type():
 
-    event_defaults = SoundEventDefaults(type="event type")
+    event_defaults = SoundEventDefaults(type="event")
     defaults = Defaults({"test.event": event_defaults})
 
     result = defaults.get_sound("test.event", "test_sound_name")
-    assert result["type"] == "event type"
+    assert result["type"] == "event"
 
 
 def test_get_sound_should_use_event_type_instead_of_all():
 
-    all_details = SoundEventDefaults(type="all type")
-    event_defaults = SoundEventDefaults(type="event type")
+    all_details = SoundEventDefaults(type="sound")
+    event_defaults = SoundEventDefaults(type="event")
     defaults = Defaults({"all": all_details, "test.event": event_defaults})
 
     result = defaults.get_sound("test.event", "test_sound_name")
-    assert result["type"] == "event type"
+    assert result["type"] == "event"
 
 
 def test_get_sound_should_use_all_when_no_event_type_exists():
 
-    all_details = SoundEventDefaults(type="all type")
+    all_details = SoundEventDefaults(type="sound")
     event_defaults = SoundEventDefaults(volume=0.1)
     defaults = Defaults({"all": all_details, "test.event": event_defaults})
 
     result = defaults.get_sound("test.event", "test_sound_name")
-    assert result["type"] == "all type"
+    assert result["type"] == "sound"
 
 
 def test_get_sound_should_not_include_type_when_no_default_specified():
@@ -354,9 +469,9 @@ def test_get_sound_should_not_include_type_when_no_default_specified():
 
 def test_get_sound_should_print_correctly():
 
-    all_details = SoundEventDefaults(type="all type")
+    all_details = SoundEventDefaults(type="sound")
     event_defaults = SoundEventDefaults(volume=0.1)
     defaults = Defaults({"all": all_details, "test.event": event_defaults})
 
     result: str = f"{defaults}"
-    assert result == "{'all': {'type': 'all type'}, 'test.event': {'volume': 0.1}}"
+    assert result == "{'all': {'type': 'sound'}, 'test.event': {'volume': 0.1}}"

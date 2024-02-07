@@ -1,13 +1,75 @@
 
+from enum import Enum
 from objects.typed_dictionaries import SoundEventDefaults, SoundEvent, Sound
 
 
 class Defaults:
     def __init__(self, data: dict[str, SoundEventDefaults]):
-        self.data: dict[str, SoundEventDefaults] = data
+
+        if self.__validate_data(data):
+            self.data: dict[str, SoundEventDefaults] = data
 
     def __str__(self):
         return f"{self.data}"
+
+    @staticmethod
+    def __validate_data(data: dict[str, SoundEventDefaults]):
+
+        for key, value in data.items():
+
+            if "volume" in value:
+
+                if type(value["volume"]) is not float and type(value["volume"]) is not int:
+                    raise TypeError("volume must be a float datatype between 0.0 and 1.0")
+
+                if value["volume"] < 0.0:
+                    raise ValueError("volume cannot be less than zero")
+
+                if value["volume"] > 1.0:
+                    raise ValueError("volume cannot be greater than 1.0")
+
+            if "pitch" in value:
+
+                if type(value["pitch"]) is not float and type(value["pitch"]) is not int:
+                    raise TypeError("pitch must be a float datatype")
+
+            if "weight" in value:
+
+                if type(value["weight"]) is not int:
+                    raise TypeError("weight must be an integer between 1 and 2,147,483,647")
+
+                if value["weight"] < 1:
+                    raise ValueError("weight cannot be less than 1")
+
+                if value["weight"] > 2_147_483_647:
+                    raise ValueError("weight cannot be greater than 2,147,483,647")
+
+            if "stream" in value and type(value["stream"]) is not bool:
+                raise TypeError("stream must be a boolean datatype")
+
+            if "attenuation_distance" in value:
+
+                if type(value["attenuation_distance"]) is not int:
+                    raise TypeError("attenuation_distance must be an integer between 0 and 2,147,483,647")
+
+                if value["attenuation_distance"] < 0:
+                    raise ValueError("attenuation_distance cannot be less than zero")
+
+                if value["attenuation_distance"] > 2_147_483_647:
+                    raise ValueError("attenuation_distance cannot be greater than 2,147,483,647")
+
+            if "preload" in value and type(value["preload"]) is not bool:
+                raise TypeError("preload must be a boolean datatype")
+
+            if "type" in value:
+
+                if type(value["type"]) is not str:
+                    raise TypeError("type must be a string containing either 'sound' or 'event'")
+
+                if value["type"] != "sound" and value["type"] != "event":
+                    raise ValueError("type must be either 'sound' or 'event'")
+
+        return True
 
     def get_sound_event(self, event_name: str):
 

@@ -1,0 +1,47 @@
+{
+  "all": {
+    "replace": true
+  },
+  "entity.enderman.scream": {
+    "subtitle": "subtitles.entity.enderman.ambient"
+  },
+  "entity.ghast.warn": {
+    "subtitle": "subtitles.entity.ghast.shoot"
+  },
+  "entity.player.big_fall": {
+    "subtitle": "subtitles.entity.generic.big_fall"
+  },
+  "entity.player.small_fall": {
+    "subtitle": "subtitles.entity.generic.small_fall"
+  },
+  "entity.villager.ambient": {
+    "volume": 0.3
+  },
+  "entity.villager.celebrate": {
+    "volume": 0.5
+  },
+  "entity.villager.death": {
+    "volume": 0.5
+  },
+  "entity.villager.hurt": {
+    "volume": 0.5
+  },
+  "entity.villager.no": {
+    "volume": 0.5
+  },
+  "entity.villager.trade": {
+    "volume": 0.5
+  },
+  "entity.villager.yes": {
+    "volume": 0.5
+  },
+  "entity.witch.ambient": {
+    "volume": 0.7
+  },
+  "entity.witch.celebrate": {
+    "volume": 0.7
+  },
+  "entity.witch.death": {
+    "volume": 0.7
+  }
+}

@@ -1,7 +1,8 @@
 import json
+from pathlib import Path
 
 from objects.defaults import Defaults
-from objects.typed_dictionaries import SoundEventDefaults, Sound, SoundEvent
+from objects.typed_dictionaries import SoundEventDefaults
 import pytest
 
 
@@ -489,7 +490,9 @@ def test_defaults_json_file_should_contain_all_these_properties():
     not a total loss.  :shrug:
     """
 
-    with open('../defaults.json') as f:
+    module_path = Path(__file__).parent.parent
+
+    with open(module_path / 'defaults.json') as f:
         d = json.load(f)
 
     defaults = Defaults(d)

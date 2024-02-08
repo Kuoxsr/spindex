@@ -19,18 +19,16 @@ Command-line arguments:
     --version   (-v)    Show version number
 """
 
-__version__ = '0.32'
+__version__ = '0.33'
 __maintainer__ = "kuoxsr@gmail.com"
 __status__ = "Prototype"
 
-
 # Import modules
+from objects.defaults import Defaults
 from objects.typed_dictionaries import SoundEvent, Sound
 
-from collections import OrderedDict
 from json_encoder import CompactJSONEncoder
 from pathlib import Path
-from tinytag import TinyTag
 
 import argparse
 import json
@@ -213,6 +211,28 @@ def get_event_dictionary(path: Path) -> dict[str, SoundEvent]:
         return dict(json.load(read_file))
 
 
+def process_ogg_files(files: list[Path]) -> tuple[list[Path], list[str]]:
+
+    warnings: list[str] = []
+    sound_paths: list[Path] = []
+
+    # Minecraft's regular expression for valid ogg file names/paths
+    mc_naming_rules = re.compile("^[a-z0-9/._-]+$")
+
+    for file in files:
+
+        # Only consider files that match naming rules
+        if not mc_naming_rules.match(str(file)):
+            warnings.append(f"{file}\nPath does not match valid naming rules")
+            continue
+
+        # Strip off irrelevant bits from the path
+        sound_path: Path = file.relative_to("/".join(file.parts[0:2]))
+        sound_paths.append(sound_path)
+
+    return sound_paths, warnings
+
+
 def get_sound_name_start_index(sound_files: list[Path]) -> int:
 
     # Show me the maximum number of folders between "sounds" and the ogg file
@@ -257,92 +277,46 @@ def get_combined_events(
 
 
 def get_generated_events(
-        source_path: Path,
+        namespace: str,
         sound_files: list[Path],
+        defaults: Defaults,
         sound_name_start_index: int) -> tuple[dict[str, SoundEvent], list[str]]:
     """
     Takes a list of sound file paths and generates JSON records in the same format
      as a Minecraft sounds.json file
 
-    :param source_path: The path to the folder where all of these files come from
+    :param namespace: The namespace to which all the ogg files belong
     :param sound_files: The list of .ogg file names in your folder structure
+    :param defaults: A dictionary of default values for various parameters, built from a json file
     :param sound_name_start_index: Where the path should be trimmed to form the JSON that MC expects
     :return: A tuple containing the following items:
         A dictionary representing the json data to be written to sounds.json
         A list of warnings that occurred during the process
     """
 
-    # The name of the namespace that these files belong in
-    namespace: str = source_path.name
-
-    # Minecraft's regular expression for valid ogg file names/paths
-    mc_naming_rules = re.compile("^[a-z0-9/._-]+$")
-
-    # Regular expression to validate sounds.json key-value pairs
-    json_regex = re.compile(get_json_regex())
-
+    events: dict[str, SoundEvent] = {}
+    known_events: list[str] = []
     warnings: list[str] = []
 
     # Build dictionary
-    events: dict[str, SoundEvent] = {}
-    known_events: list[str] = []
-    for f in sound_files:
-
-        # Only consider files under the "sounds" folder
-        if "sounds" not in f.parts:
-            warnings.append(f"{f}File is not under the 'sounds' folder")
-            continue
-
-        # Only consider files if there is at least one .ogg file in the same folder
-        if len([x for x in f.parent.glob('*.ogg')]) == 0:
-            continue
-
-        # Only consider files that match naming rules
-        file_from_source: Path = f.relative_to(source_path.parent)
-        if not mc_naming_rules.match(str(file_from_source)):
-            warnings.append(f"{file_from_source}\nPath does not match valid naming rules")
-            continue
-
-        # Strip off irrelevant bits from the path
-        file: Path = f.relative_to(source_path / "sounds")
+    for file in sound_files:
 
         # Build the event name
-        event = ".".join(file.parent.parts[sound_name_start_index:])
+        event_name = ".".join(file.parent.parts[sound_name_start_index:])
 
         # Initialize the event if we haven't seen it before
-        if event not in known_events:
-
-            # Build the event subtitle
-            subtitle: str = f"subtitles.{file.stem[1:] if (file.suffix == '.subtitles') else event}"
+        if event_name not in known_events:
 
             # Initialize the event
-            known_events.append(event)
-            events[event] = dict({"replace": True, "sounds": [], "subtitle": subtitle})
+            known_events.append(event_name)
+            events[event_name] = defaults.get_sound_event(event_name)
 
         # build the sound dictionary, and add it to the sounds list
-        if file.suffix == ".ogg":
+        sound_name: str = f"{namespace}:{file.parent}/{file.stem}"
 
-            name: str = f"{namespace}:{file.parent}/{file.stem}"
-            sound = OrderedDict({"name": name, "volume": 1.0})
+        sound = defaults.get_sound(event_name, sound_name)
 
-            # Build the custom volume, pitch, weight or stream from sound file metadata
-            album_title = TinyTag.get(f).album
-            metadata = "" if not album_title else re.sub(r'\s+', '', album_title)
-
-            # Only consider the metadata valid if it follows Minecraft's format
-            if metadata and not json_regex.match(metadata):
-                warnings.append(f"{f}\nFile metadata does not match Minecraft's format: {metadata}")
-                continue
-
-            # Only consider the metadata valid if it is valid JSON format
-            try:
-                tags: dict[Sound] = {} if not metadata else json.loads(metadata)
-            except ValueError:
-                warnings.append(f"{f}\nFile metadata is not valid JSON: ({metadata})")
-                continue
-
-            sound.update(tags)
-            events[event]["sounds"].append(sound)
+        events[event_name]["sounds"].append(sound)
 
     # Sort the dictionary by key
     sorted_events: dict[str, SoundEvent] = {key: val for key, val in sorted(events.items(), key=lambda ele: ele[0])}
@@ -390,11 +364,6 @@ def main():
 
     args = handle_command_line()
     source_path: Path = args.source
-    extensions: list[str] = [".ogg", ".subtitles"]
-    sound_files: list[Path] = sorted([f for f in source_path.rglob('*') if f.suffix in extensions])
-    # print(*sound_files, sep='\n')
-
-    sound_name_start_index = get_sound_name_start_index(sound_files)
 
     if not args.quiet:
         print(f"{green}\n-----------------------------------")
@@ -402,8 +371,34 @@ def main():
         print(f"-----------------------------------{default}")
         print(f"{cyan}Source folder: {source_path}{default}")
 
+    ogg_files: list[Path] = [f.relative_to(source_path.parent) for f in source_path.rglob('*.ogg')]
+    sound_files, warnings = process_ogg_files(ogg_files)
+
+    # If there are errors, display them and ask the user whether they'd like to proceed
+    if len(warnings) > 0:
+        print(f"\nThere were {len(warnings)} warnings during the process:{red}")
+
+        for w in warnings:
+            print(w)
+
+        if args.abort_warnings:
+            sys.exit(f"\n{default}Script execution cannot continue.")
+
+        response = input(f"{default}\nWould you like to continue? (y/N) ")
+        if response.lower() != "y":
+            print(default)
+            sys.exit()
+
+    # Get the sound event defaults from the json file
+    with open(source_path / 'defaults.json') as f:
+        default_data = json.load(f)
+
     # Generate events from our .ogg files, and return any warnings that happened along the way
-    generated_events, warnings = get_generated_events(source_path, sound_files, sound_name_start_index)
+    generated_events, warnings = get_generated_events(
+        source_path.name,
+        sound_files,
+        Defaults(default_data),
+        1)
 
     # If nothing was generated, just get out
     if len(generated_events) == 0:

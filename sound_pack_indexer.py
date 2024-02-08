@@ -19,7 +19,7 @@ Command-line arguments:
     --version   (-v)    Show version number
 """
 
-__version__ = '0.33'
+__version__ = '0.34'
 __maintainer__ = "kuoxsr@gmail.com"
 __status__ = "Prototype"
 
@@ -224,6 +224,11 @@ def process_ogg_files(files: list[Path]) -> tuple[list[Path], list[str]]:
         # Only consider files that match naming rules
         if not mc_naming_rules.match(str(file)):
             warnings.append(f"{file}\nPath does not match valid naming rules")
+            continue
+
+        # Only consider files that are beneath the "sounds" folder
+        if "sounds" not in file.parts:
+            warnings.append(f'{file}\nFile is not beneath the "sounds" folder')
             continue
 
         # Strip off irrelevant bits from the path

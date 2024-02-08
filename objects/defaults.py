@@ -76,15 +76,17 @@ class Defaults:
         a: SoundEventDefaults = self.data["all"] if "all" in self.data else SoundEventDefaults()
         d: SoundEventDefaults = self.data[event_name] if event_name in self.data else SoundEventDefaults()
 
-        default_replace = d["replace"] if "replace" in d else a["replace"] if "replace" in a else True
+        default_replace = d["replace"] if "replace" in d else a["replace"] if "replace" in a else None
 
         # Build subtitle from default if one exists, otherwise use event_name
         subtitle: str = d["subtitle"] if "subtitle" in d else f"subtitles.{event_name}"
 
         event: SoundEvent = SoundEvent(
-            replace=default_replace,
             sounds=[],
             subtitle=subtitle)
+
+        if default_replace is not None:
+            event["replace"] = default_replace
 
         return event
 

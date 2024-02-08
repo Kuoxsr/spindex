@@ -148,6 +148,15 @@ def test_get_sound_event_should_use_all_when_no_event_replace_exists():
     result = defaults.get_sound_event("test.event")
     assert result["replace"] is True
 
+
+def test_get_sound_event_should_not_include_replace_if_none_specified():
+
+    all_defaults = SoundEventDefaults()
+    defaults = Defaults({"all": all_defaults})
+
+    result = defaults.get_sound_event("test.event")
+    assert "replace" not in result.keys()
+
 # ------------------------------------------------------------------------
 
 

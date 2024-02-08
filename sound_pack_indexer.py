@@ -19,7 +19,7 @@ Command-line arguments:
     --version   (-v)    Show version number
 """
 
-__version__ = '0.34'
+__version__ = '0.35'
 __maintainer__ = "kuoxsr@gmail.com"
 __status__ = "Prototype"
 
@@ -285,7 +285,7 @@ def get_generated_events(
         namespace: str,
         sound_files: list[Path],
         defaults: Defaults,
-        sound_name_start_index: int) -> tuple[dict[str, SoundEvent], list[str]]:
+        sound_name_start_index: int) -> dict[str, SoundEvent]:
     """
     Takes a list of sound file paths and generates JSON records in the same format
      as a Minecraft sounds.json file
@@ -301,7 +301,6 @@ def get_generated_events(
 
     events: dict[str, SoundEvent] = {}
     known_events: list[str] = []
-    warnings: list[str] = []
 
     # Build dictionary
     for file in sound_files:
@@ -325,7 +324,7 @@ def get_generated_events(
 
     # Sort the dictionary by key
     sorted_events: dict[str, SoundEvent] = {key: val for key, val in sorted(events.items(), key=lambda ele: ele[0])}
-    return sorted_events, warnings
+    return sorted_events
 
 
 def get_string_path_relative_to_sounds_folder(path: Path) -> str:
@@ -410,21 +409,6 @@ def main():
         if not args.quiet:
             print("\nNothing to process")
         sys.exit()
-
-    # If there are errors, display them and ask the user whether they'd like to proceed
-    if len(warnings) > 0:
-        print(f"\nThere were {len(warnings)} warnings during the process:{red}")
-
-        for w in warnings:
-            print(w)
-
-        if args.abort_warnings:
-            sys.exit(f"\n{default}Script execution cannot continue.")
-
-        response = input(f"{default}\nWould you like to continue? (y/N) ")
-        if response.lower() != "y":
-            print(default)
-            sys.exit()
 
     # Write the finished file to the source folder
     with open(source_path / "generated-sounds.json", "w") as fp:

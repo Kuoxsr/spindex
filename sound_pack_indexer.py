@@ -337,6 +337,13 @@ def check_for_overwritten_files(source_path, target_path) -> list[str]:
     return warnings
 
 
+def print_banner(title: str, info: str):
+
+    bar = "-" * (len(title) + 1)
+    print(f"{Color.green.value}\n{bar}\n{title}\n{bar}")
+    print(f"{Color.cyan.value}{info}{Color.default.value}")
+
+
 # Main -------------------------------------------------
 def main():
     """
@@ -348,10 +355,7 @@ def main():
     source_path: Path = args.source
 
     if not args.quiet:
-        print(f"{Color.green.value}\n-----------------------------------")
-        print("Processing staging area ogg files:")
-        print(f"-----------------------------------{Color.default.value}")
-        print(f"{Color.cyan.value}Source folder: {source_path}{Color.default.value}")
+        print_banner("Processing staging area ogg files:", f"Source folder: {source_path}")
 
     ogg_files: list[Path] = [f.relative_to(source_path.parent) for f in source_path.rglob('*.ogg')]
     sound_files, warnings = process_ogg_files(ogg_files)
@@ -368,7 +372,7 @@ def main():
 
         response = input(f"{Color.default.value}\nWould you like to continue? (y/N) ")
         if response.lower() != "y":
-            print(default)
+            print(Color.default.value)
             sys.exit()
 
     # Get the sound event defaults from the json file
@@ -408,10 +412,7 @@ def main():
         sys.exit()
 
     if not args.quiet:
-        print(f"{Color.green.value}\n\n----------------------------------")
-        print("Copying files to target location:")
-        print(f"----------------------------------{Color.default.value}")
-        print(f"{Color.cyan.value}Target folder: {args.target}{Color.default.value}")
+        print_banner("Copying files to target location:", f"Target folder: {args.target}")
 
     overwrite_warnings = check_for_overwritten_files(args.source, args.target)
     if len(overwrite_warnings) > 0:
@@ -434,10 +435,9 @@ def main():
     target_json_file = args.target.parent / "minecraft" / "sounds.json"
 
     if not args.quiet:
-        print(f"{Color.green.value}\n\n----------------------------------------------------")
-        print("Incorporating JSON records into target sounds.json:")
-        print(f"----------------------------------------------------{Color.default.value}")
-        print(f"{Color.cyan.value}Target file: {target_json_file}{Color.default.value}")
+        print_banner(
+            "Incorporating JSON records into target sounds.json:",
+            f"Target file: {target_json_file}")
 
     if target_json_file.resolve() is None:
         sys.exit(f"{Color.red.value}\nERROR: Target sounds.json file cannot be found.{Color.default.value}")

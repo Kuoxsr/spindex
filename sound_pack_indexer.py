@@ -19,7 +19,7 @@ Command-line arguments:
     --version   (-v)    Show version number
 """
 
-__version__ = '0.35'
+__version__ = '0.36'
 __maintainer__ = "kuoxsr@gmail.com"
 __status__ = "Prototype"
 
@@ -321,6 +321,9 @@ def get_generated_events(
         sound = defaults.get_sound(event_name, sound_name)
 
         events[event_name]["sounds"].append(sound)
+
+        # Sort the sounds by sound path name
+        events[event_name]["sounds"] = sorted(events[event_name]["sounds"], key=lambda ele: ele["name"])
 
     # Sort the dictionary by key
     sorted_events: dict[str, SoundEvent] = {key: val for key, val in sorted(events.items(), key=lambda ele: ele[0])}

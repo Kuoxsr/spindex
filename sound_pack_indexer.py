@@ -19,7 +19,7 @@ Command-line arguments:
     --version   (-v)    Show version number
 """
 
-__version__ = '0.36'
+__version__ = '0.37'
 __maintainer__ = "kuoxsr@gmail.com"
 __status__ = "Prototype"
 
@@ -344,6 +344,26 @@ def print_banner(title: str, info: str):
     print(f"{Color.cyan.value}{info}{Color.default.value}")
 
 
+def print_warnings(warnings: list[str], header: str, action: str, abort_on_warnings: bool):
+
+    # If there are no warnings, just get out
+    if len(warnings) == 0:
+        return
+
+    print(f"\n{header}\n{Color.red.value}")
+
+    for w in warnings:
+        print(w)
+
+    if abort_on_warnings:
+        sys.exit(f"\n{Color.default.value}Script execution cannot continue.")
+
+    response = input(f"{Color.default.value}\nWould you like to {action}? (y/N) ")
+    if response.lower() != "y":
+        print(Color.default.value)
+        sys.exit()
+
+
 # Main -------------------------------------------------
 def main():
     """
@@ -359,21 +379,11 @@ def main():
 
     ogg_files: list[Path] = [f.relative_to(source_path.parent) for f in source_path.rglob('*.ogg')]
     sound_files, warnings = process_ogg_files(ogg_files)
-
-    # If there are errors, display them and ask the user whether they'd like to proceed
-    if len(warnings) > 0:
-        print(f"\nThere were {len(warnings)} warnings during the process:{Color.red.value}")
-
-        for w in warnings:
-            print(w)
-
-        if args.abort_warnings:
-            sys.exit(f"\n{Color.default.value}Script execution cannot continue.")
-
-        response = input(f"{Color.default.value}\nWould you like to continue? (y/N) ")
-        if response.lower() != "y":
-            print(Color.default.value)
-            sys.exit()
+    print_warnings(
+        warnings,
+        f"There were {len(warnings)} warnings during the process:",
+        "continue",
+        args.abort_warnings)
 
     # Get the sound event defaults from the json file
     with open(source_path / 'defaults.json') as f:
@@ -415,19 +425,11 @@ def main():
         print_banner("Copying files to target location:", f"Target folder: {args.target}")
 
     overwrite_warnings = check_for_overwritten_files(args.source, args.target)
-    if len(overwrite_warnings) > 0:
-        print(f"\nFiles could be overwritten during this process.  {len(overwrite_warnings)} warning(s):\n{Color.red.value}")
-
-        for w in overwrite_warnings:
-            print(w)
-
-        if args.abort_warnings:
-            sys.exit(f"\n{Color.default.value}Script execution cannot continue.")
-
-        response = input(f"{Color.default.value}\nWould you like to overwrite these files? (y/N) ")
-        if response.lower() != "y":
-            print(Color.default.value)
-            sys.exit()
+    print_warnings(
+        overwrite_warnings,
+        f"Files could be overwritten during this process.  {len(overwrite_warnings)} warning(s):",
+        "overwrite these files",
+        args.abort_warnings)
 
     # Copy OGG files to the target folder, creating folder structure if it doesn't exist
     shutil.copytree(args.source, args.target, ignore=everything_but_ogg_files(), dirs_exist_ok=True)

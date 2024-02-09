@@ -23,10 +23,12 @@ __version__ = '0.36'
 __maintainer__ = "kuoxsr@gmail.com"
 __status__ = "Prototype"
 
+
 # Import modules
 from objects.defaults import Defaults
 from objects.typed_dictionaries import SoundEvent, Sound
 
+from enum import Enum
 from json_encoder import CompactJSONEncoder
 from pathlib import Path
 
@@ -35,6 +37,14 @@ import json
 import re
 import shutil
 import sys
+
+
+class Color(str, Enum):
+
+    green = "\033[32m"
+    red = "\033[31m"
+    cyan = "\033[36m"
+    default = "\033[0m"
 
 
 def handle_command_line():
@@ -334,34 +344,29 @@ def main():
     This function generates a sounds.json file from a folder structure of .ogg files
     """
 
-    green = "\033[32m"
-    red = "\033[31m"
-    cyan = "\033[36m"
-    default = "\033[0m"
-
     args = handle_command_line()
     source_path: Path = args.source
 
     if not args.quiet:
-        print(f"{green}\n-----------------------------------")
+        print(f"{Color.green.value}\n-----------------------------------")
         print("Processing staging area ogg files:")
-        print(f"-----------------------------------{default}")
-        print(f"{cyan}Source folder: {source_path}{default}")
+        print(f"-----------------------------------{Color.default.value}")
+        print(f"{Color.cyan.value}Source folder: {source_path}{Color.default.value}")
 
     ogg_files: list[Path] = [f.relative_to(source_path.parent) for f in source_path.rglob('*.ogg')]
     sound_files, warnings = process_ogg_files(ogg_files)
 
     # If there are errors, display them and ask the user whether they'd like to proceed
     if len(warnings) > 0:
-        print(f"\nThere were {len(warnings)} warnings during the process:{red}")
+        print(f"\nThere were {len(warnings)} warnings during the process:{Color.red.value}")
 
         for w in warnings:
             print(w)
 
         if args.abort_warnings:
-            sys.exit(f"\n{default}Script execution cannot continue.")
+            sys.exit(f"\n{Color.default.value}Script execution cannot continue.")
 
-        response = input(f"{default}\nWould you like to continue? (y/N) ")
+        response = input(f"{Color.default.value}\nWould you like to continue? (y/N) ")
         if response.lower() != "y":
             print(default)
             sys.exit()
@@ -371,7 +376,7 @@ def main():
         default_data = json.load(f)
 
     # Generate events from our .ogg files, and return any warnings that happened along the way
-    generated_events, warnings = get_generated_events(
+    generated_events = get_generated_events(
         source_path.name,
         sound_files,
         Defaults(default_data),
@@ -397,30 +402,30 @@ def main():
         sys.exit()
 
     # Ask the user whether we should copy files to the target folder
-    print(f"\nTarget folder set to existing pack at:\n{cyan}{args.target}{default}")
+    print(f"\nTarget folder set to existing pack at:\n{Color.cyan.value}{args.target}{Color.default.value}")
     response = input("\nIncorporate source files into existing pack? (y/N) ")
     if response.lower() != "y":
         sys.exit()
 
     if not args.quiet:
-        print(f"{green}\n\n----------------------------------")
+        print(f"{Color.green.value}\n\n----------------------------------")
         print("Copying files to target location:")
-        print(f"----------------------------------{default}")
-        print(f"{cyan}Target folder: {args.target}{default}")
+        print(f"----------------------------------{Color.default.value}")
+        print(f"{Color.cyan.value}Target folder: {args.target}{Color.default.value}")
 
     overwrite_warnings = check_for_overwritten_files(args.source, args.target)
     if len(overwrite_warnings) > 0:
-        print(f"\nFiles could be overwritten during this process.  {len(overwrite_warnings)} warning(s):\n{red}")
+        print(f"\nFiles could be overwritten during this process.  {len(overwrite_warnings)} warning(s):\n{Color.red.value}")
 
         for w in overwrite_warnings:
             print(w)
 
         if args.abort_warnings:
-            sys.exit(f"\n{default}Script execution cannot continue.")
+            sys.exit(f"\n{Color.default.value}Script execution cannot continue.")
 
-        response = input(f"{default}\nWould you like to overwrite these files? (y/N) ")
+        response = input(f"{Color.default.value}\nWould you like to overwrite these files? (y/N) ")
         if response.lower() != "y":
-            print(default)
+            print(Color.default.value)
             sys.exit()
 
     # Copy OGG files to the target folder, creating folder structure if it doesn't exist
@@ -429,13 +434,13 @@ def main():
     target_json_file = args.target.parent / "minecraft" / "sounds.json"
 
     if not args.quiet:
-        print(f"{green}\n\n----------------------------------------------------")
+        print(f"{Color.green.value}\n\n----------------------------------------------------")
         print("Incorporating JSON records into target sounds.json:")
-        print(f"----------------------------------------------------{default}")
-        print(f"{cyan}Target file: {target_json_file}{default}")
+        print(f"----------------------------------------------------{Color.default.value}")
+        print(f"{Color.cyan.value}Target file: {target_json_file}{Color.default.value}")
 
     if target_json_file.resolve() is None:
-        sys.exit(f"{red}\nERROR: Target sounds.json file cannot be found.{default}")
+        sys.exit(f"{Color.red.value}\nERROR: Target sounds.json file cannot be found.{Color.default.value}")
 
     # Combine JSON files - If target is empty, just use source
     target_events = get_event_dictionary(target_json_file)

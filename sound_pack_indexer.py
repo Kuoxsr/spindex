@@ -147,23 +147,6 @@ def validate_path_architecture(path: Path) -> str | None:
     return None
 
 
-def get_json_regex() -> str:
-    volume: str = r'"volume":[0-1][.]\d|'
-    pitch: str = r'"pitch":\d[.]\d|'
-    weight: str = r'"weight":\d+|'
-    stream: str = r'"stream":(?:true|false)|'
-    dist: str = r'"attenuation_distance":\d+|'
-    preload: str = r'"preload":(?:true|false)|'
-    sound_type: str = r'"type":(?:"sound"|"event")'
-
-    stage1 = r'(?:' + volume + pitch + weight + stream + dist + preload + sound_type + ')'
-    stage2 = r'(?:,' + stage1 + ')*'
-
-    result = r'^{' + stage1 + stage2 + '}$'
-
-    return result
-
-
 def everything_but_ogg_files():
     """ Function that can be used as a shutil.copytree() ignore parameter that
     determines which files *not* to ignore, the inverse of "normal" usage.
@@ -236,19 +219,6 @@ def process_ogg_files(files: list[Path]) -> tuple[list[Path], list[str]]:
         sound_paths.append(sound_path)
 
     return sound_paths, warnings
-
-
-def get_sound_name_start_index(sound_files: list[Path]) -> int:
-
-    # Show me the maximum number of folders between "sounds" and the ogg file
-    # This is an attempt to auto-detect the starting position of the sound event name
-    max_list: tuple = max([x.parent.parts for x in sound_files], key=len)
-    max_folders: int = len(max_list[max_list.index("sounds")+1:])
-
-    # Calculate the starting index of the file path that belongs in the json data
-    typical_event_length = 3
-    adj_index: int = max_folders - typical_event_length
-    return 0 if adj_index < 0 else adj_index
 
 
 def get_combined_events(

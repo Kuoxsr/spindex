@@ -118,6 +118,13 @@ def test_constructor_should_raise_valueerror_when_type_not_sound_or_event():
         Defaults({"test.event": event_defaults})
 
 
+def test_constructor_should_not_crash_if_data_is_empty():
+
+    defaults = Defaults({})
+    result = defaults.get_sound_event("test.event.name")
+    assert result == dict({'sounds': [], 'subtitle': 'subtitles.test.event.name'})
+
+
 # ------------------------------------------------------------------------
 
 

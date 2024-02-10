@@ -19,7 +19,7 @@ Command-line arguments:
     --version   (-v)    Show version number
 """
 
-__version__ = '0.39'
+__version__ = '0.40'
 __maintainer__ = "kuoxsr@gmail.com"
 __status__ = "Prototype"
 
@@ -47,7 +47,7 @@ class Color(str, Enum):
     default = "\033[0m"
 
 
-def handle_command_line():
+def handle_command_line(validate_source_function, validate_target_function):
     """
     Handle arguments supplied by the user
     """
@@ -94,10 +94,10 @@ def handle_command_line():
 
     args = parser.parse_args()
 
-    if src := validate_source(args.source):
+    if src := validate_source_function(args.source):
         sys.exit(src.format("source"))
 
-    if tgt := validate_target(args.target):
+    if tgt := validate_target_function(args.target):
         sys.exit(tgt.format("target"))
 
     # resolve relative paths
@@ -333,7 +333,7 @@ def main():
     This function generates a sounds.json file from a folder structure of .ogg files
     """
 
-    args = handle_command_line()
+    args = handle_command_line(validate_source, validate_target)
     source_path: Path = args.source
 
     if not args.quiet:

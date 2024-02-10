@@ -7,7 +7,7 @@ The project wasn't intended for public consumption.  Lots of things are non-opti
 Since my plans for the future involve hundreds (perhaps _thousands_) of sound files (and their corresponding records in JSON), I needed some way of making the job faster.  Automating the creation of JSON is one way to do that, since it saves me from having to switch to a text editor over and over again while I edit sound files.
 
 ## How to set up a sound pack staging area
-I do not recommend running this script on a production folder containing previously created JSON and `.ogg` files, because the existing JSON might contain changes you made manually that are not covered by this script (and various other issues), however, the file that is created uses the prefix `generated_` to avoid collisions, just in case.
+I do not recommend running this script on a production folder containing previously created JSON and `.ogg` files, because the existing JSON might contain changes you made manually that are not covered by this script (and various other issues), however, the file that is created uses the prefix `generated-` to avoid collisions, just in case.
 
 What I _do_ recommend is setting up a special staging area for the edited files.
 
@@ -25,7 +25,7 @@ mynamespace (can be "minecraft" if you don't want to use a custom namespace)
 
 In the above example, the script would generate a record for the entity.villager.ambient sound event, with `test-sound.ogg` as its only sound.  The JSON might look like this:
 
-```
+```json
 {
     "entity.villager.ambient": {
         "sounds": [
@@ -67,73 +67,68 @@ I suppose I should mention that sound files themselves can be named anything you
 5. underscore
 6. dash
 
-Here is a regular expression to check file names, which this script uses:
+Here is the regular expression this application uses to check file names:
 
 ```
 ^[a-z0-9/._-]+$
 ```
 
-### Subtitles files
-If your JSON doesn't include a "subtitle" specification for a sound event you will not see text like "villager mumbles" on the right-hand side of the screen when the noise occurs (provided you have "show subtitles" on.)  To cover that, the script auto-generates this for you with exactly the same name as the sound event by default.  I say "by default," because in several places throughout the vanilla `sounds.json` file, the subtitle _does not match_ the sound event name (Thanks, Mojang!)
 
-There were too many of these to put into the script as exceptions (and that felt like a hack anyway,) so I decided that I would let the file structure handle that too.
+### defaults.json
+In order to speed up the process of setting custom properties on the files in your staging area, you should probably set up a defaults.json file.  It lives in the namespace folder and has the following structure.  I've cut it down a bit for brevity:
 
-To create a subtitle that does not match the sound event name, you put a file into the folder with the `.ogg` files, which is named using the following format:
-
-```
-.{name of subtitle string}.subtitles
-```
-
-Note the initial dot.  This is to make the file invisible under normal file browsing (at least under Linux), and to make it easy to exclude these files from the copy commands I haven't written yet.  The extension of `.subtitles` ensures that the script knows what it's for.  In the output, the word "subtitles" is moved to the start of the name.  Here's a real-world example:
-
-A file in this folder:
-```
-assets/{namespace}/sounds/entity/ghast/warn/
-```
-
-... with this name:
-```
-.entity.ghast.shoot.subtitles
-```
-
-... results in this JSON:
-```
+```json
 {
-    "entity.ghast.warn": {
-        "subtitle": "subtitles.entity.ghast.shoot"
-    }
+  "all": {
+    "replace": true
+  },
+  "entity.enderman.scream": {
+    "subtitle": "subtitles.entity.enderman.ambient"
+  },
+  "entity.ghast.warn": {
+    "subtitle": "subtitles.entity.ghast.shoot"
+  },
+  "entity.player.big_fall": {
+    "subtitle": "subtitles.entity.generic.big_fall"
+  },
+  "entity.player.small_fall": {
+    "subtitle": "subtitles.entity.generic.small_fall"
+  },
+  "entity.villager.ambient": {
+    "volume": 0.3
+  },
+  "entity.villager.celebrate": {
+    "volume": 0.5
+  },
+  "entity.witch.ambient": {
+    "replace": false,
+    "volume": 0.7,
+    "weight": 3,
+    "pitch": 2.4,
+    "stream": false,
+    "attenuation_distance": 8,
+    "preload": true,
+    "type": "sound"
+  }
 }
 ```
 
-Again, thanks Mojang for making these names different for no apparent reason :rage:
+Things to notice about the above:
 
-When the staging area folder structure is copied (without `.ogg` files) for the next team member, the subtitles for each sound event that needs them will be copied as well (using a command I haven't written yet.)  This means, once you tag an event folder with the proper subtitle string, you should never have to do it again.
+- Default values can be defined per sound event, and can contain any of the values listed in the Minecraft Wiki under "sounds.json"
+- There is a fallback called "all" that applies to every sound event, unless specified via a specific event name.
+- Some of the events specify a subtitle that is different from the event name.  Yep, that's right.  It's the whole reason I designed this method of defaulting.  I couldn't just automatically generate them from the file structure.  Thanks, Mojang!
 
-### Ogg file metadata
-I didn't want to stop there, however, because you can alter the volume, pitch, selection weight and a bunch of other things for each file by specifying these in the JSON.  I tend to make villager sounds `0.5` in volume, because fully normalized files sound _really loud_ when spoken by a villager.  Other sounds, particularly monster noises, I would like to keep at full volume if possible, or at any level I find appropriate.  But how would I do this without causing more work than it would take to just edit the JSON manually?  I used `.ogg` file metadata.
+You can't specify these values per sound, but you can set aside a specific event as having a default volume, pitch, weight, etc.  For example, in the document above, the entity.villager.ambient event will always default to volume 0.3, while pretty much every other villager sound defaults to volume of 0.5.  I found that the ambient sounds were too loud and got on people's nerves after a longer period of time.  Meanwhile, sounds like the trade sounds should be louder, so they can cut through the noise.
 
-I edit clips in an audio editor called [Tenacity](https://codeberg.org/tenacityteam/tenacity), which is a fork of [Audacity](https://github.com/audacity/audacity).  Both are open source and do the job well.  When I export a finished edit, it asks me for metadata - things like Artist, track number, album title, etc.  I decided to use "album title" for my custom JSON string, since I'm already using other tags for their intended purposes.  Now when I export a file to `.ogg`, I can set a tentative volume level right in Tenacity without ever reaching for my text editor, and this script can detect that and add it to the final `generated_sounds.json`.
+The point of the file is customizability, however, so find the default values that work best for you.  Start with the defaults.json in the root of this project, copy it to your staging area, and modify it to your heart's content.  There is plenty of bounds-checking in the app to make sure that the values are correct before it uses them.
 
-I also figured that since I was in the process, I might as well make it easy to add any of the other potential directives as well, and that turned out to be much easier to do than I expected.
-
-Here's the text to enter into Album Title to just set the volume:
-```
-{"volume": 0.5}
-```
-
-If you want to include other properties, it would look something like this:
-```
-{"volume": 0.5, "pitch": 5.3, "stream": true, "weight": 5}
-```
-
-There's a good document explaining what all these directives do [here](https://minecraft.fandom.com/wiki/Sounds.json).
-
-The script will now warn you when you spell something wrong or create malformed JSON in some way.  Curly braces are required.  Finding a regular expression to validate all of that was a nightmare hellscape of epic proportions, but having it working makes me feel a bit like a [superhero](https://xkcd.com/208/). :superhero:
+If you want a good laugh, take a look at the commit history of this file for what used to be in this spot.
 
 ### "replace": true
 Much of the time, you will want to have `"replace": true` set for a particular sound event, like so:
 
-```
+```json
 {
     "entity.villager.trade": {
         "replace": true,
@@ -149,16 +144,14 @@ What this does is tell Minecraft to stomp on any previous sounds in that event, 
 
 Since this is a harsh and overbearing way to construct a pack, there may be times when you don't want to include that line.
 
-Well, tough darts, farmer... because I haven't coded a way to do that automatically yet!  As of this writing, it _always_ generates `"replace": true` and you're just going to have to live with it! :boom:
-
-Seriously, though... I haven't decided how to handle this.  Do I want a command-line switch to change the default to `"replace": false` or do I want a solution like the above with dotfiles like `.false.replace`?  If you can think of the best way to handle this, I'm all ears.
+That's where you might want to set a particular event to have "replace": false
 
 ## How to run this script
-To run the script, you need a [python 3.11 environment](https://www.python.org/downloads/release/python-3110/).  Explaining [how to install](https://duckduckgo.com/?q=how+to+install+python+3.11) that is beyond the scope of this document.  Also out of scope is an explanation of how to set up the external modules it requires.  The script imports several modules that are not in the standard set, such as `TinyTag` and `CompactJSONEncoder`, so it won't be easy to set this up for anyone who doesn't understand Python.  I may update this document to include instructions if I get enough requests (and I figure out how to do it myself without [PyCharm](https://www.jetbrains.com/pycharm/).)  One of the problems is that `TinyTag` is installed into a virtual environment for this project, and PyCharm tells git to ignore this by default.  It needs to be manually installed.
+To run the script, you need a [python 3.11 environment](https://www.python.org/downloads/release/python-3110/).  Explaining [how to install](https://duckduckgo.com/?q=how+to+install+python+3.11) that is beyond the scope of this document.
 
-If this giant set of instructions hasn't deterred you, and the previous paragraph doesn't scare you away, pass the path to your namespace folder into the script via command-line parameter, like so:
+Pass the path to your namespace folder into the script via command-line parameter, like so:
 
-```
+```bash
 [you@localhost:~/dev/folder]$ ./sound-pack-indexer -s /path/to/namespace/folder
 ```
 
@@ -167,22 +160,51 @@ When finished, the script will show the contents it created in the terminal wind
 ## Merging the generated file into an existing sound pack
 Once `generated-sounds.json` is created, its contents will be shown in the terminal window. If you specified a target folder in the command, like this:
 
-```
-./sound-pack-indexer -s /path/to/namespace-folder -t /path/to/sound/pack
+```bash
+./sound-pack-indexer -s /path/to/staging-namespace -t /path/to/sound/pack
 ```
 
 ... or, if you put the script in your path, gave it an alias, and executed it from within the source folder, like this:
 
-```
-[you@localhost:/path/to/namespace-folder]$ packindex -t /path/to/sound/pack
+```bash
+[you@localhost:/path/to/staging-namespace]$ packindex -t /path/to/sound/pack
 ```
 
 ...you'll be asked whether you want to copy the files to the target folder.
 
 Answering "y" to this question does two things:
 
-1. All the `.ogg` files in your staging area's folder structure will be copied to the target location's folder structure and overwrite any existing files by the same name that it finds there.
+1. All the `.ogg` files in your staging area's folder structure will be copied to the target location's folder structure
+    1. The app notifies you of any name collisions and allows you to abort
+    2. If you choose not to abort, files in the target folder will be overwritten
 2. The JSON data in `generated-sounds.json` will be merged into the `sounds.json` file in your existing sound pack.
+    1. Sound event names and sound file names will be sorted alphabetically in their respective contexts.
+
+### Command-line switches
+If you run the app with "-h" you'll see an explanation of all the optional switches that are possible:
+
+```
+usage: Sound Pack Indexer [-h] [-v] [-i] [-q] [-a] [-s SOURCE] [-t TARGET]
+
+Generates a json index from folders full of .ogg files.
+Optionally allows automatic merging of this generated file with an existing pack.
+
+options:
+-h, --help            show this help message and exit
+-v, --version         show program's version number and exit
+-i, --index-only      Only produce the generated-sounds.json file and then exit.
+-q, --quiet           Suppress printing of json file contents. Only show warnings.
+
+-a, --abort-warnings  Treat all warnings as fatal errors, and exit as soon as they occur.
+
+-s SOURCE, --source SOURCE
+Path to the source folder. Ogg files to be indexed are found here.
+
+-t TARGET, --target TARGET
+Path to the target folder. Ogg files will be copied here, if allowed.
+```
+
+Those are probably self-explanatory, right?
 
 ## This script only works in Linux
 I have not tested whether this script runs in a Windows environment, only Linux.  Your mileage may vary.  If you try it in Windows and it doesn't work, fix the problem and submit a pull request.  An issue in the bug tracker for that particular problem will likely go nowhere, because I do not own a copy of Windows in which to test.  If it _does_ work in Windows, let me know so that I can remove this paragraph.

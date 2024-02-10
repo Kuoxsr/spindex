@@ -19,7 +19,7 @@ Command-line arguments:
     --version   (-v)    Show version number
 """
 
-__version__ = '0.37'
+__version__ = '0.38'
 __maintainer__ = "kuoxsr@gmail.com"
 __status__ = "Prototype"
 
@@ -157,41 +157,6 @@ def validate_path_architecture(path: Path) -> str | None:
     return None
 
 
-def everything_but_ogg_files():
-    """ Function that can be used as a shutil.copytree() ignore parameter that
-    determines which files *not* to ignore, the inverse of "normal" usage.
-
-    This is a factory function that creates a function which can be used as a
-    callable for copytree()'s ignore argument, *not* ignoring files that match
-    any of the glob-style patterns provided.
-
-    Stolen from user martineau on Stack Overflow, and heavily modified for my own use-case
-    https://stackoverflow.com/a/35161407
-    """
-    def _ignore_patterns(path, all_names):
-
-        files_to_ignore: set[str] = set()
-        for name in all_names:
-
-            name_to_check = (Path(path) / name)
-
-            # Handle differently if name is a directory
-            if name_to_check.is_dir():
-
-                # If there are no .ogg files in any of the directory's subdirectories
-                if len([x for x in name_to_check.rglob('*.ogg')]) == 0:
-                    files_to_ignore.add(name)
-
-                continue
-
-            # Ignore files that are not .ogg
-            if name_to_check.suffix != '.ogg':
-                files_to_ignore.add(name)
-
-        return set(files_to_ignore)
-
-    return _ignore_patterns
-
 
 def get_event_dictionary(path: Path) -> dict[str, SoundEvent]:
     """Loads a json file from disk"""
@@ -205,6 +170,13 @@ def get_event_dictionary(path: Path) -> dict[str, SoundEvent]:
 
 
 def process_ogg_files(files: list[Path]) -> tuple[list[Path], list[str]]:
+    """
+    Takes a list of ogg files and only keeps the ones that don't
+    violate Minecraft's naming rules.  Generates warnings for any
+    that do violate these rules.
+    :param files: A list of files whose paths must start with the folder immediately under "sounds"
+    :return: A tuple containing the list of valid files and a list of warnings
+    """
 
     warnings: list[str] = []
     sound_paths: list[Path] = []
@@ -216,17 +188,10 @@ def process_ogg_files(files: list[Path]) -> tuple[list[Path], list[str]]:
 
         # Only consider files that match naming rules
         if not mc_naming_rules.match(str(file)):
-            warnings.append(f"{file}\nPath does not match valid naming rules")
+            warnings.append(f"{file} <- Path does not match valid naming rules, and will be ignored")
             continue
 
-        # Only consider files that are beneath the "sounds" folder
-        if "sounds" not in file.parts:
-            warnings.append(f'{file}\nFile is not beneath the "sounds" folder')
-            continue
-
-        # Strip off irrelevant bits from the path
-        sound_path: Path = file.relative_to("/".join(file.parts[0:2]))
-        sound_paths.append(sound_path)
+        sound_paths.append(file)
 
     return sound_paths, warnings
 
@@ -310,22 +275,13 @@ def get_generated_events(
     return sorted_events
 
 
-def get_string_path_relative_to_sounds_folder(path: Path) -> str:
-
-    # Find index of "sounds" folder
-    sounds_index: int = path.parts.index("sounds")
-
-    # build string based on the parts that are relative to the index
-    return "/".join(path.parts[sounds_index:])
-
-
-def check_for_overwritten_files(source_path, target_path) -> list[str]:
+def check_for_overwritten_files(source_files: list[Path], target_path: Path) -> list[str]:
 
     warnings: list[str] = list()
 
-    # pull lists of files from both source and target
-    source_files: list[str] = list(get_string_path_relative_to_sounds_folder(f) for f in source_path.rglob("*.ogg"))
-    target_files: list[str] = list(get_string_path_relative_to_sounds_folder(f) for f in target_path.rglob("*.ogg"))
+    # pull lists of files from target
+    target_sound_path = target_path / "sounds"
+    target_files: list[Path] = list(f.relative_to(target_sound_path) for f in target_sound_path.rglob("*.ogg"))
 
     # Loop through source list
     for file in source_files:
@@ -364,6 +320,17 @@ def print_warnings(warnings: list[str], header: str, action: str, abort_on_warni
         sys.exit()
 
 
+def copy_sound_files(sound_files: list[Path], source_path: Path, target_path: Path):
+
+    for file in sound_files:
+
+        source = source_path / "sounds" / file
+        target = target_path / "sounds" / file
+
+        target.parent.mkdir(parents=True, exist_ok=True)
+        shutil.copy2(source, target)
+
+
 # Main -------------------------------------------------
 def main():
     """
@@ -377,7 +344,8 @@ def main():
     if not args.quiet:
         print_banner("Processing staging area ogg files:", f"Source folder: {source_path}")
 
-    ogg_files: list[Path] = [f.relative_to(source_path.parent) for f in source_path.rglob('*.ogg')]
+    source_sound_path = source_path / "sounds"
+    ogg_files: list[Path] = [f.relative_to(source_sound_path) for f in source_sound_path.rglob('*.ogg')]
     sound_files, warnings = process_ogg_files(ogg_files)
     print_warnings(
         warnings,
@@ -424,7 +392,7 @@ def main():
     if not args.quiet:
         print_banner("Copying files to target location:", f"Target folder: {args.target}")
 
-    overwrite_warnings = check_for_overwritten_files(args.source, args.target)
+    overwrite_warnings = check_for_overwritten_files(sound_files, args.target)
     print_warnings(
         overwrite_warnings,
         f"Files could be overwritten during this process.  {len(overwrite_warnings)} warning(s):",
@@ -432,7 +400,7 @@ def main():
         args.abort_warnings)
 
     # Copy OGG files to the target folder, creating folder structure if it doesn't exist
-    shutil.copytree(args.source, args.target, ignore=everything_but_ogg_files(), dirs_exist_ok=True)
+    copy_sound_files(sound_files, args.source, args.target)
 
     target_json_file = args.target.parent / "minecraft" / "sounds.json"
 

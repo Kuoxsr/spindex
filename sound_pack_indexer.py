@@ -19,7 +19,7 @@ Command-line arguments:
     --version   (-v)    Show version number
 """
 
-__version__ = '0.38'
+__version__ = '0.39'
 __maintainer__ = "kuoxsr@gmail.com"
 __status__ = "Prototype"
 
@@ -157,7 +157,6 @@ def validate_path_architecture(path: Path) -> str | None:
     return None
 
 
-
 def get_event_dictionary(path: Path) -> dict[str, SoundEvent]:
     """Loads a json file from disk"""
 
@@ -275,13 +274,9 @@ def get_generated_events(
     return sorted_events
 
 
-def check_for_overwritten_files(source_files: list[Path], target_path: Path) -> list[str]:
+def check_for_overwritten_files(source_files: list[Path], target_files: list[Path]) -> list[str]:
 
     warnings: list[str] = list()
-
-    # pull lists of files from target
-    target_sound_path = target_path / "sounds"
-    target_files: list[Path] = list(f.relative_to(target_sound_path) for f in target_sound_path.rglob("*.ogg"))
 
     # Loop through source list
     for file in source_files:
@@ -392,7 +387,10 @@ def main():
     if not args.quiet:
         print_banner("Copying files to target location:", f"Target folder: {args.target}")
 
-    overwrite_warnings = check_for_overwritten_files(sound_files, args.target)
+    # pull lists of files from target
+    target_sound_path = args.target / "sounds"
+    target_files: list[Path] = list(f.relative_to(target_sound_path) for f in target_sound_path.rglob("*.ogg"))
+    overwrite_warnings = check_for_overwritten_files(sound_files, target_files)
     print_warnings(
         overwrite_warnings,
         f"Files could be overwritten during this process.  {len(overwrite_warnings)} warning(s):",

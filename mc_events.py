@@ -1317,5 +1317,5 @@ mc_events = [
 "ui.toast.in",
 "ui.toast.out",
 "weather.rain",
-"weather.rain.above",
+"weather.rain.above"
 ]

@@ -19,7 +19,7 @@ Command-line arguments:
     --version   (-v)    Show version number
 """
 
-__version__ = '0.40'
+__version__ = '0.41'
 __maintainer__ = "kuoxsr@gmail.com"
 __status__ = "Prototype"
 
@@ -250,7 +250,7 @@ def get_generated_events(
     for file in sound_files:
 
         # Build the event name
-        event_name = ".".join(file.parent.parts[sound_name_start_index:])
+        event_name = get_event_name(file)
 
         # Initialize the event if we haven't seen it before
         if event_name not in known_events:
@@ -272,6 +272,44 @@ def get_generated_events(
     # Sort the dictionary by key
     sorted_events: dict[str, SoundEvent] = {key: val for key, val in sorted(events.items(), key=lambda ele: ele[0])}
     return sorted_events
+
+
+def get_event_name(ogg_file: Path) -> str:
+    """
+    Finds the event name from the file path, starting with
+    an actual event starting segment.
+    :param ogg_file: The file to use when building the event name
+    :return: An event name formatted with dots (e.g.; entity.villager.ambient)
+    """
+
+    mc_event_start: list[str] = [
+        "ambient",
+        "block",
+        "enchant",
+        "entity",
+        "event",
+        "item",
+        "music",
+        "music_disc",
+        "particle",
+        "ui",
+        "weather"
+    ]
+
+    event_parts: list[str] = []
+
+    for part in ogg_file.parent.parts:
+
+        if len(event_parts) > 0 or part in mc_event_start:
+
+            # if we've already found the start, keep adding parts
+            event_parts.append(part)
+
+    # If there are less than two segments, it's probably not an event name
+    if len(event_parts) < 2:
+        return ""
+
+    return ".".join(event_parts)
 
 
 def check_for_overwritten_files(source_files: list[Path], target_files: list[Path]) -> list[str]:

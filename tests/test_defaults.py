@@ -662,6 +662,3 @@ def test_defaults_json_file_should_contain_all_these_properties():
     assert len(witch_death_sound.keys()) == 2
     assert witch_death_sound["name"] == "witch_death"
     assert witch_death_sound["volume"] == 0.7
-
-    assert True
-

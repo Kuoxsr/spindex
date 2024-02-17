@@ -2,6 +2,21 @@
   "all": {
     "replace": true
   },
+  "block.beacon.ambient": {
+    "attenuation_distance": 8
+  },
+  "block.slime_block.break": {
+    "subtitle": "subtitles.block.generic.break"
+  },
+  "block.slime_block.hit": {
+    "subtitle": "subtitles.block.generic.hit"
+  },
+  "block.slime_block.place": {
+    "subtitle": "subtitles.block.generic.place"
+  },
+  "block.slime_block.step": {
+    "subtitle": "subtitles.block.generic.footsteps"
+  },
   "entity.enderman.scream": {
     "subtitle": "subtitles.entity.enderman.ambient"
   },
@@ -13,6 +28,21 @@
   },
   "entity.player.small_fall": {
     "subtitle": "subtitles.entity.generic.small_fall"
+  },
+  "entity.slime.death_small": {
+    "subtitle": "subtitles.entity.slime.death"
+  },
+  "entity.slime.hurt_small": {
+    "subtitle": "subtitles.entity.slime.hurt"
+  },
+  "entity.slime.jump": {
+    "subtitle": "subtitles.entity.slime.squish"
+  },
+  "entity.slime.jump_small": {
+    "subtitle": "subtitles.entity.slime.squish"
+  },
+  "entity.slime.squish_small": {
+    "subtitle": "subtitles.entity.slime.squish"
   },
   "entity.villager.ambient": {
     "volume": 0.3

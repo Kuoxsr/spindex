@@ -1,5 +1,5 @@
 from pathlib import Path
-from sound_event_catalog import SoundEventCatalog, SoundEventValueError
+from objects.sound_event_catalog import SoundEventCatalog, SoundEventValueError
 
 import pytest
 

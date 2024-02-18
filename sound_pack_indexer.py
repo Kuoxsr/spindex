@@ -19,7 +19,7 @@ Command-line arguments:
     --version   (-v)    Show version number
 """
 
-__version__ = '0.41'
+__version__ = '0.42'
 __maintainer__ = "kuoxsr@gmail.com"
 __status__ = "Prototype"
 
@@ -27,6 +27,7 @@ __status__ = "Prototype"
 # Import modules
 from objects.defaults import Defaults
 from objects.typed_dictionaries import SoundEvent, Sound
+from objects.sound_event_catalog import SoundEventCatalog, SoundEventValueError
 
 from enum import Enum
 from json_encoder import CompactJSONEncoder
@@ -229,7 +230,7 @@ def get_generated_events(
         namespace: str,
         sound_files: list[Path],
         defaults: Defaults,
-        sound_name_start_index: int) -> dict[str, SoundEvent]:
+        catalog: SoundEventCatalog) -> (dict[str, SoundEvent], list[str]):
     """
     Takes a list of sound file paths and generates JSON records in the same format
      as a Minecraft sounds.json file
@@ -237,20 +238,26 @@ def get_generated_events(
     :param namespace: The namespace to which all the ogg files belong
     :param sound_files: The list of .ogg file names in your folder structure
     :param defaults: A dictionary of default values for various parameters, built from a json file
-    :param sound_name_start_index: Where the path should be trimmed to form the JSON that MC expects
+    :param catalog: An object that contains every Minecraft sound event name
     :return: A tuple containing the following items:
         A dictionary representing the json data to be written to sounds.json
         A list of warnings that occurred during the process
     """
 
+    warnings: list[str] = []
     events: dict[str, SoundEvent] = {}
     known_events: list[str] = []
 
     # Build dictionary
     for file in sound_files:
 
-        # Build the event name
-        event_name = get_event_name(file)
+        # Build the event name, if we can
+        try:
+            event_name = catalog.get_sound_event_name(file)
+        except SoundEventValueError as e:
+            # If we can't, then add to the warnings and skip the file
+            warnings.append(str(e))
+            continue
 
         # Initialize the event if we haven't seen it before
         if event_name not in known_events:
@@ -271,45 +278,7 @@ def get_generated_events(
 
     # Sort the dictionary by key
     sorted_events: dict[str, SoundEvent] = {key: val for key, val in sorted(events.items(), key=lambda ele: ele[0])}
-    return sorted_events
-
-
-def get_event_name(ogg_file: Path) -> str:
-    """
-    Finds the event name from the file path, starting with
-    an actual event starting segment.
-    :param ogg_file: The file to use when building the event name
-    :return: An event name formatted with dots (e.g.; entity.villager.ambient)
-    """
-
-    mc_event_start: list[str] = [
-        "ambient",
-        "block",
-        "enchant",
-        "entity",
-        "event",
-        "item",
-        "music",
-        "music_disc",
-        "particle",
-        "ui",
-        "weather"
-    ]
-
-    event_parts: list[str] = []
-
-    for part in ogg_file.parent.parts:
-
-        if len(event_parts) > 0 or part in mc_event_start:
-
-            # if we've already found the start, keep adding parts
-            event_parts.append(part)
-
-    # If there are less than two segments, it's probably not an event name
-    if len(event_parts) < 2:
-        return ""
-
-    return ".".join(event_parts)
+    return sorted_events, warnings
 
 
 def check_for_overwritten_files(source_files: list[Path], target_files: list[Path]) -> list[str]:
@@ -391,17 +360,24 @@ def main():
         default_data = json.load(f)
 
     # Generate events from our .ogg files, and return any warnings that happened along the way
-    generated_events = get_generated_events(
+    generated_events, warnings = get_generated_events(
         source_path.name,
         sound_files,
         Defaults(default_data),
-        1)
+        SoundEventCatalog())
 
     # If nothing was generated, just get out
     if len(generated_events) == 0:
         if not args.quiet:
             print("\nNothing to process")
         sys.exit()
+
+    # If we had warnings, show them to the user
+    print_warnings(
+        warnings,
+        f"{len(warnings)} files could not be converted to event names:",
+        "skip those files",
+        args.abort_warnings)
 
     # Write the finished file to the source folder
     with open(source_path / "generated-sounds.json", "w") as fp:

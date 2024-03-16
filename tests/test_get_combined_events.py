@@ -1,8 +1,8 @@
 
-from sound_pack_indexer import get_combined_events
-from sound_pack_indexer import Sound
-from sound_pack_indexer import SoundEvent
 import pytest
+
+from spindex import get_combined_events
+from typed_dictionaries import SoundEvent, Sound
 
 
 @pytest.fixture
@@ -479,5 +479,3 @@ def test_get_combined_events_should_not_change_existing_subtitle(trade_event_bad
     # Call the function under test, and check the result
     result = get_combined_events(trade_event_bad_subtitle, trade_event)
     assert result == expected
-
-

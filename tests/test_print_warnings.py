@@ -1,6 +1,6 @@
 import pytest
 
-from sound_pack_indexer import print_warnings, Color
+from spindex import print_warnings, Color
 
 
 def test_print_warnings_should_not_print_any_output_when_no_warnings(capsys):

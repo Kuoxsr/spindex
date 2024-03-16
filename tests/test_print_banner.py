@@ -1,4 +1,4 @@
-from sound_pack_indexer import print_banner, Color
+from spindex import print_banner, Color
 
 
 def test_print_banner_should_build_banner_correctly(capsys):

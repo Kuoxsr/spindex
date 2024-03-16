@@ -1,6 +1,6 @@
 from pathlib import Path
 
-from sound_pack_indexer import check_for_overwritten_files
+from spindex import check_for_overwritten_files
 
 
 def test_check_for_overwritten_files_should_not_warn_when_no_files_in_target():

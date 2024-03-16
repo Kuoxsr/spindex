@@ -1,6 +1,6 @@
 
 from pathlib import Path
-from sound_pack_indexer import process_ogg_files
+from spindex import process_ogg_files
 
 
 def test_process_ogg_files_should_generate_warning_for_a_bad_file_name():

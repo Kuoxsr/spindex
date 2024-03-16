@@ -3,7 +3,7 @@ from pathlib import Path
 from objects.defaults import Defaults
 from objects.sound_event_catalog import SoundEventCatalog
 from objects.typed_dictionaries import SoundEventDefaults, Sound
-from sound_pack_indexer import get_generated_events
+from spindex import get_generated_events
 
 
 def test_get_generated_events_should_build_event_name_correctly():

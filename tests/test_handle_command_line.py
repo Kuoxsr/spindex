@@ -4,7 +4,7 @@ from unittest.mock import patch
 
 import pytest
 
-from sound_pack_indexer import handle_command_line
+from spindex import handle_command_line
 
 
 @pytest.fixture

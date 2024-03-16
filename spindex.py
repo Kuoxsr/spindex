@@ -23,6 +23,7 @@ __status__ = "Prototype"
 
 
 # Import modules
+from typing import Tuple
 from objects.defaults import Defaults
 from objects.typed_dictionaries import SoundEvent
 from objects.sound_event_catalog import SoundEventCatalog, SoundEventValueError
@@ -250,7 +251,7 @@ def get_generated_events(
         namespace: str,
         sound_files: list[Path],
         defaults: Defaults,
-        catalog: SoundEventCatalog) -> (dict[str, SoundEvent], list[str]):
+        catalog: SoundEventCatalog) -> Tuple[dict[str, SoundEvent], list[str]]:
     """
     Generates JSON records in the same format as a Minecraft sounds.json file
 
@@ -424,7 +425,7 @@ def main():
 
     # Show the user what was written to the source folder, unless in quiet mode
     if not args.quiet:
-        print(f"\ngenerated-sounds.json contains the following contents:\n")
+        print("\ngenerated-sounds.json contains the following contents:\n")
         print(json.dumps(generated_events, indent=4, cls=CompactJSONEncoder))
 
     # Just get out if index-only mode is set or if no target folder specified
@@ -482,7 +483,7 @@ def main():
 
     # Show the user what was written to the target folder, unless in quiet mode
     if not args.quiet:
-        print(f"\nCombined file has the following contents:\n")
+        print("\nCombined file has the following contents:\n")
         print(json.dumps(
             combined_json,
             indent=4,

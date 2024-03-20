@@ -17,7 +17,7 @@ Command-line arguments:
     --version   (-v)    Show version number
 """
 
-__version__ = '1.0'
+__version__ = '1.1'
 __maintainer__ = "kuoxsr@gmail.com"
 __status__ = "Prototype"
 
@@ -430,6 +430,7 @@ def main():
 
     # Just get out if index-only mode is set or if no target folder specified
     if args.index_only or args.target is None or args.target.resolve() is None:
+        print("\nTarget not specified or index only mode. Program finished.")
         sys.exit()
 
     # Ask the user whether we should copy files to the target folder

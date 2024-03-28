@@ -17,13 +17,12 @@ Command-line arguments:
     --version   (-v)    Show version number
 """
 
-__version__ = '1.1'
+__version__ = '1.2'
 __maintainer__ = "kuoxsr@gmail.com"
 __status__ = "Prototype"
 
 
 # Import modules
-from typing import Tuple
 from objects.defaults import Defaults
 from objects.typed_dictionaries import SoundEvent
 from objects.sound_event_catalog import SoundEventCatalog, SoundEventValueError
@@ -31,6 +30,7 @@ from objects.sound_event_catalog import SoundEventCatalog, SoundEventValueError
 from enum import Enum
 from json_encoder import CompactJSONEncoder
 from pathlib import Path
+from typing import Tuple
 
 import argparse
 import json
@@ -47,7 +47,7 @@ class Color(str, Enum):
     default = "\033[0m"
 
 
-def handle_command_line(validate_source_function, validate_target_function):
+def handle_command_line():
     """
     Handle arguments supplied by the user
     """
@@ -101,17 +101,6 @@ def handle_command_line(validate_source_function, validate_target_function):
               "Ogg files will be copied here, if allowed."))
 
     args = parser.parse_args()
-
-    if src := validate_source_function(args.source):
-        sys.exit(src.format("source"))
-
-    if tgt := validate_target_function(args.target):
-        sys.exit(tgt.format("target"))
-
-    # resolve relative paths
-    args.source = args.source.resolve()
-    args.target = args.target.resolve()
-
     return args
 
 
@@ -375,7 +364,18 @@ def main():
     Generates a sounds.json file from a folder structure of .ogg files
     """
 
-    args = handle_command_line(validate_source, validate_target)
+    args = handle_command_line()
+
+    if src := validate_source(args.source):
+        sys.exit(src.format("source"))
+
+    if tgt := validate_target(args.target):
+        sys.exit(tgt.format("target"))
+
+    # Relative paths cause problems if not resolved here
+    args.source = args.source.resolve()
+    args.target = args.target.resolve()
+
     source_path: Path = args.source
 
     if not args.quiet:

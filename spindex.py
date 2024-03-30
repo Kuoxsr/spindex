@@ -17,7 +17,7 @@ Command-line arguments:
     --version   (-v)    Show version number
 """
 
-__version__ = '1.4'
+__version__ = '1.5'
 __maintainer__ = "kuoxsr@gmail.com"
 __status__ = "Prototype"
 
@@ -160,11 +160,8 @@ def validate_target_path(path: Path):
 def get_event_dictionary(path: Path) -> dict[str, SoundEvent]:
     """Loads a json file from disk"""
 
-    if not path.exists():
-        return {}
-
-    # If the file is empty, return an empty object
-    if path.stat().st_size == 0:
+    # Return an empty object if path doesn't exist or file is empty
+    if not path.exists() or path.stat().st_size == 0:
         return {}
 
     with open(path, "r") as read_file:

@@ -17,7 +17,7 @@ Command-line arguments:
     --version   (-v)    Show version number
 """
 
-__version__ = '1.3'
+__version__ = '1.4'
 __maintainer__ = "kuoxsr@gmail.com"
 __status__ = "Prototype"
 
@@ -45,6 +45,10 @@ class Color(str, Enum):
     red = "\033[31m"
     cyan = "\033[36m"
     default = "\033[0m"
+
+
+class IncorrectDirStructureError(Exception):
+    pass
 
 
 def handle_command_line():
@@ -104,23 +108,30 @@ def handle_command_line():
     return args
 
 
-def validate_source(path: Path) -> str | None:
+def validate_source_path(path: Path):
+    """Folder must have only one child, and that child must be 'sounds'"""
 
-    # Does path folder exist on the file system?
     if not path.exists():
-        return (f"Specified {{}} path not found. "
-                f"{path} is not a valid filesystem path.")
+        raise FileNotFoundError(
+            f"Specified source path not found. "
+            f"{path} is not a valid filesystem path.")
 
-    return validate_path_architecture(path)
+    path_check = [i for i in path.iterdir() if i.is_dir()]
+    error_start: str = f"{path} does not appear to be a namespace folder."
+
+    if len(path_check) > 1:
+        raise IncorrectDirStructureError(
+            f"{error_start} Should only have one sub-folder.")
+
+    if len(path_check) != 1 or path_check[0].name != "sounds":
+        raise IncorrectDirStructureError(
+            f"{error_start} Should have a 'sounds' sub-folder.")
 
 
-def validate_target(path: Path) -> str | None:
+def validate_target_path(path: Path):
+    """Creates proper folder structure if it doesn't exist"""
 
-    # Empty path should just be ignored
-    if path.resolve() is None:
-        return None
-
-    # build a few of the files/folders we need for later
+    # Build a few of the files/folders we need for later
     namespace = path
     namespace_sounds = path / "sounds"
     minecraft = path.parent / "minecraft"
@@ -128,37 +139,22 @@ def validate_target(path: Path) -> str | None:
 
     # If path has an incomplete structure,
     # create all necessary objects, if the user agrees
-    if not namespace.exists() or \
-       not namespace_sounds.exists() or \
-       not minecraft.exists() or \
-       not sounds_json.exists():
+    if any([not namespace.exists(),
+            not namespace_sounds.exists(),
+            not minecraft.exists(),
+            not sounds_json.exists()]):
 
         response = input((
             f"\nPath {namespace} has an incomplete structure. "
             f"Create folder structure? (y/N) "))
 
         if response.lower() != "y":
-            return None
+            raise SystemExit("Aborted by user.")
 
         # Create the proper folder structure in the target location
         namespace_sounds.mkdir(parents=True, exist_ok=True)
         minecraft.mkdir(parents=True, exist_ok=True)
         sounds_json.touch()
-
-    # Validate existing structure
-    return validate_path_architecture(path)
-
-
-def validate_path_architecture(path: Path) -> str | None:
-
-    # Folder must have only one child, and that child must be "sounds"
-    path_check = [i for i in path.iterdir() if i.is_dir()]
-    if len(path_check) != 1 and path_check[1] != "sounds":
-        return (
-            f"The {{}} path {path} does not appear to be a namespace folder. "
-            f" Should have a 'sounds' sub-folder.")
-
-    return None
 
 
 def get_event_dictionary(path: Path) -> dict[str, SoundEvent]:
@@ -369,15 +365,15 @@ def main():
 
     args = handle_command_line()
 
-    if src := validate_source(args.source):
-        sys.exit(src.format("source"))
-
-    if tgt := validate_target(args.target):
-        sys.exit(tgt.format("target"))
+    try:
+        validate_source_path(args.source)
+    except FileNotFoundError as error:
+        sys.exit(str(error))
+    except IncorrectDirStructureError as error:
+        sys.exit(str(error))
 
     # Relative paths cause problems if not resolved here
     args.source = args.source.resolve()
-    args.target = args.target.resolve()
 
     source_path: Path = args.source
 
@@ -442,6 +438,12 @@ def main():
     response = input("\nIncorporate source files into existing pack? (y/N) ")
     if response.lower() != "y":
         sys.exit()
+
+    try:
+        # Create proper folder structure, if the user approves
+        validate_target_path(args.target)
+    except SystemExit as error:
+        sys.exit(str(error))
 
     if not args.quiet:
         print_banner("Copying files to target location:",

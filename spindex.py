@@ -17,7 +17,7 @@ Command-line arguments:
     --version   (-v)    Show version number
 """
 
-__version__ = '1.5'
+__version__ = '1.6'
 __maintainer__ = "kuoxsr@gmail.com"
 __status__ = "Prototype"
 
@@ -228,8 +228,17 @@ def get_combined_events(
                 "subtitle" not in result[event_name]):
             result[event_name]["subtitle"] = incoming_event_details["subtitle"]
 
-    # return empty structure, for now
-    return dict(sorted(result.items()))
+    # Sort the dictionary under event name by key
+    sorted_events: dict = {}
+    for key, val in result.items():
+        sorted_sub_events: dict = {
+            k: v for k, v in sorted(
+                val.items(), key=lambda ele: ele[0])}
+
+        sorted_events[key] = sorted_sub_events
+
+    # Sort the dictionary by key
+    return dict(sorted(sorted_events.items()))
 
 
 def get_generated_events(

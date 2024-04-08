@@ -1,4 +1,3 @@
-
 import pytest
 
 from spindex import get_combined_events
@@ -30,6 +29,20 @@ def death_event() -> dict[str, SoundEvent]:
     event = SoundEvent(
         replace=True,
         sounds=[Sound(name="namespace:entity/villager/death/death")],
+        subtitle="subtitles.entity.villager.death")
+
+    events = dict[str, SoundEvent]()
+    events["entity.villager.death"] = event
+
+    return events
+
+
+@pytest.fixture
+def death_event_disordered() -> dict[str, SoundEvent]:
+
+    event = SoundEvent(
+        sounds=[Sound(name="namespace:entity/villager/death/death")],
+        replace=True,
         subtitle="subtitles.entity.villager.death")
 
     events = dict[str, SoundEvent]()
@@ -149,6 +162,29 @@ def two_sounds_in_different_events() -> dict[str, SoundEvent]:
         replace=True,
         sounds=[sound2],
         subtitle="subtitles.entity.villager.yes")
+
+    events = dict[str, SoundEvent]()
+    events["entity.villager.ambient"] = event1
+    events["entity.villager.yes"] = event2
+
+    return events
+
+
+@pytest.fixture
+def two_sounds_in_different_events_disordered() -> dict[str, SoundEvent]:
+
+    sound1 = Sound(name="namespace:entity/villager/ambient/ambient10")
+    sound2 = Sound(name="namespace:entity/villager/yes/yes20")
+
+    event1 = SoundEvent(
+        sounds=[sound1],
+        subtitle="subtitles.entity.villager.ambient",
+        replace=True)
+
+    event2 = SoundEvent(
+        subtitle="subtitles.entity.villager.yes",
+        replace=True,
+        sounds=[sound2])
 
     events = dict[str, SoundEvent]()
     events["entity.villager.ambient"] = event1
@@ -311,6 +347,47 @@ def test_get_combined_events_should_sort_events_by_event_name(death_event, two_s
 
     # Call the function under test, and check the result
     result = get_combined_events(death_event, two_sounds_in_different_events)
+    assert str(result) == str(expected)
+
+
+def test_get_combined_events_should_sort_replace_sounds_subtitle_in_correct_order(
+        death_event_disordered,
+        two_sounds_in_different_events_disordered):
+    """
+    This test is to make sure that the entire dictionary is being sorted by
+    event name.
+    """
+
+    # Build expected combination
+    sound1 = Sound(name="namespace:entity/villager/ambient/ambient10")
+    sound2 = Sound(name="namespace:entity/villager/death/death")
+    sound3 = Sound(name="namespace:entity/villager/yes/yes20")
+
+    event1 = SoundEvent(
+        replace=True,
+        sounds=[sound1],
+        subtitle="subtitles.entity.villager.ambient")
+
+    event2 = SoundEvent(
+        replace=True,
+        sounds=[sound2],
+        subtitle="subtitles.entity.villager.death")
+
+    event3 = SoundEvent(
+        replace=True,
+        sounds=[sound3],
+        subtitle="subtitles.entity.villager.yes")
+
+    expected = dict[str, SoundEvent]()
+    expected["entity.villager.ambient"] = event1
+    expected["entity.villager.death"] = event2
+    expected["entity.villager.yes"] = event3
+
+    # Call the function under test, and check the result
+    result = get_combined_events(
+        death_event_disordered,
+        two_sounds_in_different_events_disordered)
+
     assert str(result) == str(expected)
 
 
